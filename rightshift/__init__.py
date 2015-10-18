@@ -9,6 +9,14 @@ class TransformationException(BaseException):
     pass
 
 
+class ChainException(TransformationException):
+    """
+    An exception that is raised when an attempt to chain two Transforms together
+    fails.
+    """
+    pass
+
+
 class Transformer(object):
     """
     A Transform is an object which can be called with a single input value.
@@ -44,7 +52,9 @@ class Transformer(object):
         :param other:
         :return:
         """
-        raise NotImplementedError
+        if isinstance(other, Transformer):
+            return _Chain(other, self)
+        raise ChainException('{} is not an instance of Transformer'.format(other))
 
     def __rand__(self, other):
         """
@@ -62,4 +72,22 @@ class Transformer(object):
         :return:
         """
         raise NotImplementedError
+
+
+class _Chain(Transformer):
+    """
+    A Chain is a special Transform that is used to implement the >> operation
+    on Transforms.
+
+    When two Transforms are chained together using the >> operator the output
+    of the >> operator is a new Transform that can be called in order to return
+    the result of calling the right operand with the result of calling the left
+    operand. I.e. (a >> b)(x) is synonymous with b(a(x))
+    """
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    def __call__(self, value):
+        return self.right(self.left(value))
 
