@@ -5,7 +5,23 @@ __author__ = 'adam.jorgensen.za@gmail.com'
 
 
 class Extractor(Transformer):
-    pass
+
+    def __ror__(self, other):
+        if isinstance(other, Extractor):
+            # TODO: ORing two Extractor type Transforms causes the first
+            # TODO: successfully extracted result to be returned
+            pass
+        pass
+
+    def __rand__(self, other):
+        if isinstance(other, Extractor):
+            # TODO: ANDing two Extractor type Transforms causes each Transform
+            # TODO: to be executed and the extracted results return as a list.
+            # TODO: Repeated ANDs stack such that the result of a & b & c will
+            # TODO: be a flat list with 3 elements of the form [a(), b(), c(0]
+            # TODO: rather than a nested list of the form [a(), [b(), c()]]
+            pass
+        pass
 
 
 class _ItemExtractor(Extractor):
