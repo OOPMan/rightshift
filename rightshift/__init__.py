@@ -22,10 +22,44 @@ class Transformer(object):
     operation. Chaining functions such that Transforms can be chained
     together from left to right in the order they should logically executed on
     the input value.
+
+    Transforms may also be ANDed or ORed with other Transforms. The manner in
+    which this behaves depends greatly on the type of Transforms and some types
+    may not be compatible with others with regards to AND/OR. In such a case,
+    an Exception will be raised if incompatible types are AND/ORed together.
     """
 
     def __call__(self, value):
+        """
+        __call__ is used to implement the transformation process
+
+        :param value:
+        :return:
+        """
         raise NotImplementedError
 
     def __rshift__(self, other):
+        """
+        __rshift__ is used to implement >> chaining of Transformers.
+        :param other:
+        :return:
+        """
         raise NotImplementedError
+
+    def __rand__(self, other):
+        """
+        __rand__ is used to implement & ANDing of Transformers
+
+        :param other:
+        :return:
+        """
+        raise NotImplementedError
+
+    def __ror__(self, other):
+        """
+        __ror__ is used to implement | ORing of Transformers
+        :param other:
+        :return:
+        """
+        raise NotImplementedError
+
