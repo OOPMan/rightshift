@@ -24,8 +24,24 @@ class Extractor(Transformer):
             # TODO: Repeated ANDs stack such that the result of a & b & c will
             # TODO: be a flat list with 3 elements of the form [a(), b(), c(0]
             # TODO: rather than a nested list of the form [a(), [b(), c()]]
-            pass
+            class MultiplexingExtractor(Extractor):
+                def __init__(self, *extractors):
+                    self.extractors = extractors
+
+                def __call__(self, value, **flags):
+                    return [extractor(value, **flags) for extractor in self.extractors]
+
+                def __rand__(self, other):
+                    if isinstance(other, _MultiplexingExtractor):
+                        pass
+                    return super(MultiplexingExtractor, self).__rand__(other)
+
+            return MultiplexingExtractor(other, self)
         pass
+
+
+class _MultiplexingExtractor(Extractor):
+    pass
 
 
 class _IdentityExtractor(Extractor):
@@ -37,7 +53,13 @@ class _IdentityExtractor(Extractor):
     """
     def __call__(self, value, **flags):
         return value
-identity = _IdentityExtractor()
+
+
+def identity():
+    class IdentityExtractor(_IdentityExtractor):
+        pass
+
+    return IdentityExtractor()
 
 
 class _ItemExtractor(Extractor):
@@ -50,40 +72,39 @@ class _ItemExtractor(Extractor):
     is raised.
     """
 
-    def __init__(self, item=None):
-        self.item = item
-
-    def __call__(self, value, **flags):
-        try:
-            return value[self.item]
-        except Exception as e:
-            raise_from(ExtractorException, e)
-
     def __getitem__(self, item):
-        return _ItemExtractor(item)
+        class ItemExtractor(_ItemExtractor):
+            def __call__(self, value, **flags):
+                try:
+                    return value[item]
+                except Exception as e:
+                    raise_from(ExtractorException, e)
+        return ItemExtractor()
+
 item = _ItemExtractor()
 
 
 class _PatternGroupExtractor(Extractor):
+    pass
 
-    def __init__(self, pattern, group=1, search=True):
-        from past.builtins import basestring
-        if isinstance(pattern, basestring):
-            from re import compile
-            pattern = compile(pattern)
-        self.pattern = pattern
-        self.group = group
-        self.search = search
 
-    def __call__(self, value, **flags):
-        try:
-            method = self.pattern.search if self.search else self.pattern.match
-            match = method(value)
-            if match is None:
-                raise ExtractorException
-            return match.group(self.group)
-        except Exception as e:
-            raise_from(ExtractorException, e)
-pattern_group = _PatternGroupExtractor
+def pattern_group(pattern, group=1, search=True):
+    from past.builtins import basestring
+    if isinstance(pattern, basestring):
+        from re import compile
+        pattern = compile(pattern)
+
+    class PatternGroupExtractor(_PatternGroupExtractor):
+        def __call__(self, value, **flags):
+            try:
+                method = pattern.search if search else pattern.match
+                match = method(value)
+                if match is None:
+                    raise ExtractorException
+                return match.group(group)
+            except Exception as e:
+                raise_from(ExtractorException, e)
+
+    return PatternGroupExtractor()
 
 

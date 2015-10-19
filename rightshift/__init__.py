@@ -55,7 +55,30 @@ class Transformer(object):
         :return:
         """
         if isinstance(other, Transformer):
-            return _Chain(other, self)
+            class Chain(Transformer):
+                """
+                A Chain is a special Transform that is used to implement the >> operation
+                on Transforms.
+
+                When two Transforms are chained together using the >> operator the output
+                of the >> operator is a new Transform that can be called in order to return
+                the result of calling the right operand with the result of calling the left
+                operand. I.e. (a >> b)(x) is synonymous with b(a(x))
+                """
+                def __init__(self, left, right):
+                    self.left = left
+                    self.right = right
+
+                def __call__(self, value, **flags):
+                    if isinstance(self.right, _Flags):
+                        use_flags = copy(self.right.flags)
+                        use_flags.update(flags)
+                        return self.left(value, **use_flags)
+                    else:
+                        return self.right(self.left(value, **flags), **flags)
+
+            return Chain(other, self)
+
         raise ChainException('{} is not an instance of Transformer'.format(other))
 
     def __rand__(self, other):
@@ -76,30 +99,11 @@ class Transformer(object):
         raise NotImplementedError
 
 
-class _Chain(Transformer):
-    """
-    A Chain is a special Transform that is used to implement the >> operation
-    on Transforms.
-
-    When two Transforms are chained together using the >> operator the output
-    of the >> operator is a new Transform that can be called in order to return
-    the result of calling the right operand with the result of calling the left
-    operand. I.e. (a >> b)(x) is synonymous with b(a(x))
-    """
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-
-    def __call__(self, value, **flags):
-        if isinstance(self.right, _Flags):
-            use_flags = copy(self.right.flags)
-            use_flags.update(flags)
-            return self.left(value, **use_flags)
-        else:
-            return self.right(self.left(value, **flags), **flags)
-
-
 class _Flags(Transformer):
+    pass
+
+
+def flags(**flags):
     """
     Flags are a special Transform that allows for data to be passed down to
     Transform chain in order to signal Transforms to modify their behaviour.
@@ -109,7 +113,10 @@ class _Flags(Transformer):
     is passed on while the Flag object itself is not called as it does not
     implement __call__
     """
-    def __init__(self, **flags):
-        self.flags = flags
-flags = _Flags
+    class Flags(_Flags):
 
+        @property
+        def flags(self):
+            return flags
+
+    return Flags()
