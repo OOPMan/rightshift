@@ -1,3 +1,5 @@
+from copy import copy
+
 __author__ = 'adam.jorgensen.za@gmail.com'
 
 
@@ -37,7 +39,7 @@ class Transformer(object):
     an Exception will be raised if incompatible types are AND/ORed together.
     """
 
-    def __call__(self, value):
+    def __call__(self, value, **flags):
         """
         __call__ is used to implement the transformation process
 
@@ -88,6 +90,26 @@ class _Chain(Transformer):
         self.left = left
         self.right = right
 
-    def __call__(self, value):
-        return self.right(self.left(value))
+    def __call__(self, value, **flags):
+        if isinstance(self.right, _Flags):
+            use_flags = copy(self.right.flags)
+            use_flags.update(flags)
+            return self.left(value, **use_flags)
+        else:
+            return self.right(self.left(value, **flags), **flags)
+
+
+class _Flags(Transformer):
+    """
+    Flags are a special Transform that allows for data to be passed down to
+    Transform chain in order to signal Transforms to modify their behaviour.
+
+    Flags are supported in this by the Chain Transform which is aware of Flags
+    and handles them in a special fashion to ensure that the Flag information
+    is passed on while the Flag object itself is not called as it does not
+    implement __call__
+    """
+    def __init__(self, **flags):
+        self.flags = flags
+flags = _Flags
 
