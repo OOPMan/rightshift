@@ -4,6 +4,10 @@ from future.utils import raise_from
 __author__ = 'adam.jorgensen.za@gmail.com'
 
 
+class ExtractorException(TransformationException):
+    pass
+
+
 class Extractor(Transformer):
 
     def __ror__(self, other):
@@ -53,7 +57,7 @@ class _ItemExtractor(Extractor):
         try:
             return value[self.item]
         except Exception as e:
-            raise_from(TransformationException, e)
+            raise_from(ExtractorException, e)
 
     def __getitem__(self, item):
         return _ItemExtractor(item)
@@ -76,10 +80,10 @@ class _PatternGroupExtractor(Extractor):
             method = self.pattern.search if self.search else self.pattern.match
             match = method(value)
             if match is None:
-                raise TransformationException
+                raise ExtractorException
             return match.group(self.group)
         except Exception as e:
-            raise_from(TransformationException, e)
+            raise_from(ExtractorException, e)
 pattern_group = _PatternGroupExtractor
 
 
