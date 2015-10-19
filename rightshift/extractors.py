@@ -24,9 +24,21 @@ class Extractor(Transformer):
         pass
 
 
+class _IdentityExtractor(Extractor):
+    """
+    The IdentityExtractor is extremely simple and simply returns whatever
+    value it is called with. However, it does inherit from the Extractor
+    class and hence inherits the & and | functionality implement by the
+    Extractor class.
+    """
+    def __call__(self, value, **flags):
+        return value
+identity = _IdentityExtractor()
+
+
 class _ItemExtractor(Extractor):
     """
-    An ItemExtract instances expects to be called with a value that will be
+    An ItemExtractor instances expects to be called with a value that will be
     accessed as if it were a container type in order to retrieve the item or
     slice that the ItemExtract was instantiated with.
 
@@ -37,7 +49,7 @@ class _ItemExtractor(Extractor):
     def __init__(self, item=None):
         self.item = item
 
-    def __call__(self, value):
+    def __call__(self, value, **flags):
         try:
             return value[self.item]
         except Exception as e:
@@ -59,7 +71,7 @@ class _PatternGroupExtractor(Extractor):
         self.group = group
         self.search = search
 
-    def __call__(self, value):
+    def __call__(self, value, **flags):
         try:
             method = self.pattern.search if self.search else self.pattern.match
             match = method(value)
