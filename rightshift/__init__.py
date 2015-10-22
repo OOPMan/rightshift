@@ -77,9 +77,9 @@ class Transformer(object):
                     else:
                         return self.right(self.left(value, **flags), **flags)
 
-            return Chain(other, self)
+            return Chain(self, other)
 
-        raise ChainException('{} is not an instance of Transformer'.format(other))
+        raise TypeError('{} is not an instance of Transformer'.format(other))
 
     def __ror__(self, other):
         if isinstance(other, Transformer):
@@ -112,8 +112,17 @@ class _Demultiplexer(Transformer):
     def __init__(self, *transformers):
         self.transformers = transformers
 
-    def __call__(self, value, **flags):
-        return [transformer(value, **flags) for transformer in self.transformers]
+    def __call__(self, value, demultiplexer__yield=False, **flags):
+        if demultiplexer__yield:
+            return (
+                transformer(value, demultiplexer__yield=demultiplexer__yield, **flags)
+                for transformer in self.transformers
+            )
+        else:
+            return [
+                transformer(value, demultiplexer__yield=demultiplexer__yield, **flags)
+                for transformer in self.transformers
+            ]
 
 
 class _Flags(Transformer):
