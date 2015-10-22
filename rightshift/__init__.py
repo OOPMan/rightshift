@@ -81,22 +81,39 @@ class Transformer(object):
 
         raise ChainException('{} is not an instance of Transformer'.format(other))
 
-    def __rand__(self, other):
-        """
-        __rand__ is used to implement & ANDing of Transformers
-
-        :param other:
-        :return:
-        """
-        raise NotImplementedError
-
     def __ror__(self, other):
-        """
-        __ror__ is used to implement | ORing of Transformers
-        :param other:
-        :return:
-        """
-        raise NotImplementedError
+        if isinstance(other, Transformer):
+            # TODO: ORing two Extractor type Transforms causes the first
+            # TODO: successfully extracted result to be returned
+            pass
+        pass
+
+    def __rand__(self, other):
+        transformers = [other]
+        if isinstance(other, _Demultiplexer):
+            transformers = list(copy(other.transformers))
+        if isinstance(other, Transformer):
+            class Demultiplexer(_Demultiplexer):
+
+                def __rand__(self, other):
+                    transformers = [other]
+                    if isinstance(other, _Demultiplexer):
+                        transformers = list(copy(other.transformers))
+                    if isinstance(other, Transformer):
+                        transformers.extend(self.transformers)
+                        return Demultiplexer(*transformers)
+                    return super(Demultiplexer, self).__rand__(other)
+
+            transformers.append(self)
+            return Demultiplexer(*transformers)
+
+
+class _Demultiplexer(Transformer):
+    def __init__(self, *transformers):
+        self.transformers = transformers
+
+    def __call__(self, value, **flags):
+        return [transformer(value, **flags) for transformer in self.transformers]
 
 
 class _Flags(Transformer):
