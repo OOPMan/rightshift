@@ -31,6 +31,11 @@ def identity():
 
 
 class __ItemExtractorCreator(object):
+    """
+    TODO: Document
+    """
+    def __call__(self, item):
+        return self.__getitem__(item)
 
     def __getitem__(self, item):
         class ItemExtractor(_ItemExtractor):
@@ -66,6 +71,12 @@ item = __ItemExtractorCreator()
 
 
 class __AttributeExtractorCreator(object):
+    """
+    TODO: Document
+    """
+    def __call__(self, attribute):
+        return self.__getattr__(attribute)
+
     def __getattr__(self, attribute):
         class AttributeExtractor(_AttributeExtractor):
             pass
@@ -100,6 +111,9 @@ attr = __AttributeExtractorCreator()
 
 
 class _PatternGroupExtractor(Extractor):
+    """
+    TODO: Document
+    """
     pass
 
 
