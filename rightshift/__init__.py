@@ -82,20 +82,50 @@ class Transformer(object):
         raise TypeError('{} is not an instance of Transformer'.format(other))
 
     def __ror__(self, other):
+        """
+        TODO: Document
+        """
+        transformers = [other]
+        if isinstance(other, _Detupling):
+            transformers = list(copy(other.transformers))
         if isinstance(other, Transformer):
-            # TODO: ORing two Extractor type Transforms causes the first
-            # TODO: successfully extracted result to be returned
-            pass
-        pass
+            class Detupling(_Detupling):
+                """
+                TODO: Document
+                """
+                def __ror__(self, other):
+                    """
+                    TODO: Document
+                    """
+                    transformers = [other]
+                    if isinstance(other, _Tupling):
+                        transformers = list(copy(other.transformers))
+                    if isinstance(other, Transformer):
+                        transformers.extend(self.transformers)
+                        return Detupling(*transformers)
+                    return super(Detupling, self).__ror__(other)
+
+            transformers.append(self)
+            return Detupling(*transformers)
+
+        raise TransformationException('Unable to detuple {} with {}'.format(self, other))
 
     def __rand__(self, other):
+        """
+        TODO: Document
+        """
         transformers = [other]
         if isinstance(other, _Tupling):
             transformers = list(copy(other.transformers))
         if isinstance(other, Transformer):
             class Tupling(_Tupling):
-
+                """
+                TODO: Document
+                """
                 def __rand__(self, other):
+                    """
+                    TODO: Document
+                    """
                     transformers = [other]
                     if isinstance(other, _Tupling):
                         transformers = list(copy(other.transformers))
@@ -107,15 +137,55 @@ class Transformer(object):
             transformers.append(self)
             return Tupling(*transformers)
 
+        raise TransformationException('Unable to tuple {} with {}'.format(self, other))
 
-class _Chain(Transformer): pass
+
+class _Chain(Transformer):
+    """
+    TODO: Document
+    """
+    pass
+
+
+class _Detupling(Transformer):
+    """
+    TODO: Document
+    """
+    def __init__(self, *transformers):
+        """
+        TODO: Document
+
+        :param transformers:
+        :return:
+        """
+        self.transformers = transformers
+
+    def __call__(self, value, **flags):
+        """
+        TODO: Document
+        """
+        for transformer in self.transformers:
+            try:
+                return transformer(value, **flags)
+            except TransformationException:
+                pass
+        raise TransformationException('Failed to detuple {}'.format(value))
 
 
 class _Tupling(Transformer):
+    """
+    TODO: Document
+    """
     def __init__(self, *transformers):
+        """
+        TODO: Document
+        """
         self.transformers = transformers
 
     def __call__(self, value, tupling__generator=False, **flags):
+        """
+        TODO: Document
+        """
         if tupling__generator:
             return (
                 transformer(value, tupling_generator=tupling__generator, **flags)
@@ -145,6 +215,11 @@ def flags(**flags):
 
         @property
         def flags(self):
+            """
+            TODO: Document
+
+            :return:
+            """
             return flags
 
     return Flags()
