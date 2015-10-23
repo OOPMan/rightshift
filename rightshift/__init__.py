@@ -90,37 +90,37 @@ class Transformer(object):
 
     def __rand__(self, other):
         transformers = [other]
-        if isinstance(other, _Demultiplexer):
+        if isinstance(other, _Tupling):
             transformers = list(copy(other.transformers))
         if isinstance(other, Transformer):
-            class Demultiplexer(_Demultiplexer):
+            class Tupling(_Tupling):
 
                 def __rand__(self, other):
                     transformers = [other]
-                    if isinstance(other, _Demultiplexer):
+                    if isinstance(other, _Tupling):
                         transformers = list(copy(other.transformers))
                     if isinstance(other, Transformer):
                         transformers.extend(self.transformers)
-                        return Demultiplexer(*transformers)
-                    return super(Demultiplexer, self).__rand__(other)
+                        return Tupling(*transformers)
+                    return super(Tupling, self).__rand__(other)
 
             transformers.append(self)
-            return Demultiplexer(*transformers)
+            return Tupling(*transformers)
 
 
-class _Demultiplexer(Transformer):
+class _Tupling(Transformer):
     def __init__(self, *transformers):
         self.transformers = transformers
 
-    def __call__(self, value, demultiplexer__yield=False, **flags):
-        if demultiplexer__yield:
+    def __call__(self, value, tupling__generator=False, **flags):
+        if tupling__generator:
             return (
-                transformer(value, demultiplexer__yield=demultiplexer__yield, **flags)
+                transformer(value, tupling_generator=tupling__generator, **flags)
                 for transformer in self.transformers
             )
         else:
             return [
-                transformer(value, demultiplexer__yield=demultiplexer__yield, **flags)
+                transformer(value, tupling__generator=tupling__generator, **flags)
                 for transformer in self.transformers
             ]
 
