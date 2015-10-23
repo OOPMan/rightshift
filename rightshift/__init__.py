@@ -55,7 +55,7 @@ class Transformer(object):
         :return:
         """
         if isinstance(other, Transformer):
-            class Chain(Transformer):
+            class Chain(_Chain):
                 """
                 A Chain is a special Transform that is used to implement the >> operation
                 on Transforms.
@@ -108,6 +108,9 @@ class Transformer(object):
             return Tupling(*transformers)
 
 
+class _Chain(Transformer): pass
+
+
 class _Tupling(Transformer):
     def __init__(self, *transformers):
         self.transformers = transformers
@@ -125,8 +128,7 @@ class _Tupling(Transformer):
             ]
 
 
-class _Flags(Transformer):
-    pass
+class _Flags(Transformer): pass
 
 
 def flags(**flags):
