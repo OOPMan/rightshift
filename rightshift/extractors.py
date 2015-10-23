@@ -4,12 +4,10 @@ from future.utils import raise_from
 __author__ = 'adam.jorgensen.za@gmail.com'
 
 
-class ExtractorException(TransformationException):
-    pass
+class ExtractorException(TransformationException): pass
 
 
-class Extractor(Transformer):
-    pass
+class Extractor(Transformer): pass
 
 
 class _IdentityExtractor(Extractor):
@@ -24,23 +22,13 @@ class _IdentityExtractor(Extractor):
 
 
 def identity():
-    class IdentityExtractor(_IdentityExtractor):
-        pass
+    """
+    :return: an IdentityExtractor instance
+    :rtype: _IdentityExtractor
+    """
+    class IdentityExtractor(_IdentityExtractor): pass
 
     return IdentityExtractor()
-
-
-class __ItemExtractorCreator(object):
-    """
-    TODO: Document
-    """
-    def __call__(self, item):
-        return self.__getitem__(item)
-
-    def __getitem__(self, item):
-        class ItemExtractor(_ItemExtractor):
-            pass
-        return _ItemExtractor(item)
 
 
 class _ItemExtractor(Extractor):
@@ -49,88 +37,223 @@ class _ItemExtractor(Extractor):
     accessed as if it were a container type in order to retrieve the item or
     slice that the ItemExtract was instantiated with.
 
-    If retrieval of the item fails from the value then a TransformationException
+    If retrieval of the item fails from the value then an ExtractorException
     is raised.
     """
-    def __init__(self, item):
-        self.item = item
+    def __init__(self, item_or_slice):
+        """
+        :param item_or_slice: A valid item name or slice value
+        """
+        self.item_or_slice = item_or_slice
 
     def __call__(self, value, **flags):
+        """
+        :param value: The value to attempt extraction from
+        :param flags: A dictionary of flags
+        :return: The extracted value
+        :raise: ExtractorException
+        """
         try:
-            return value[self.item]
+            return value[self.item_or_slice]
         except Exception as e:
             raise_from(ExtractorException, e)
 
-    def __getitem__(self, item):
-        class ItemExtractor(_ItemExtractor):
-            pass
+    def __getattr__(self, item_name):
+        """
+        :param item_name: A valid item name value
+        :return: a Chain instance
+        :rtype: rightshift._Chain
+        """
+        return self.__getitem__(item_name)
 
-        return self >> ItemExtractor(item)
+    def __getitem__(self, item_or_slice):
+        """
+        :param item_or_slice: A valid item name or slice value
+        :return: a Chain instance
+        :rtype: rightshift._Chain
+        """
+        class ItemExtractor(_ItemExtractor): pass
+
+        #TODO: Fix this to work beyond two levels of depth
+        return self >> ItemExtractor(item_or_slice)
+
+
+class __ItemExtractorCreator(object):
+    """
+    The __ItemExtractorCreator is a private class that is instantiated once
+    and assigned to the `item` variable in the rightshift.extractors module.
+
+    This allows syntax of the form item['key'], item.key and item('key') to be
+    used in place of the less compact _ItemExtractor('key') form.
+    """
+    def __call__(self, item_or_slice):
+        """
+        :param item_or_slice: A valid item name or slice value
+        :return: an ItemExtractor instance
+        :rtype: _ItemExtractor
+        """
+        return self.__getitem__(item_or_slice)
+
+    def __getattr__(self, item_name):
+        """
+        :param item_name: A valid item name value
+        :return: an ItemExtractor instance
+        :rtype: _ItemExtractor
+        """
+        return self.__getitem__(item_name)
+
+    def __getitem__(self, item_or_slice):
+        """
+        :param item_or_slice: A valid item name or slice value
+        :return: an ItemExtractor instance
+        :rtype: _ItemExtractor
+        """
+        class ItemExtractor(_ItemExtractor): pass
+
+        return ItemExtractor(item_or_slice)
+
 
 item = __ItemExtractorCreator()
+"""
+item is a special shortcut to enable working with the _ItemExtractor class to
+feel more natural. item is an instance of the private __ItemExtractorCreator
+class which mirrors the functionality of the _ItemExtractor class but is not
+actually an instance of _ItemExtractor itself. This allows item to be used to
+generate natural looking item extraction expressions.
 
+Examples:
 
-class __AttributeExtractorCreator(object):
-    """
-    TODO: Document
-    """
-    def __call__(self, attribute):
-        return self.__getattr__(attribute)
-
-    def __getattr__(self, attribute):
-        class AttributeExtractor(_AttributeExtractor):
-            pass
-
-        return AttributeExtractor(attribute)
-
-    def __setattr__(self, key, value):
-        raise NotImplementedError
+item['x'] is equivalent to _ItemExtractor('x')
+item['x']['y'] is equivalent to _ItemExtractor('x')['y']
+"""
 
 
 class _AttributeExtractor(Extractor):
     """
-    TODO: Document
+    An AttributeExtractor instance can be called with a value in order to
+    attempt to retrieve an attribute on that value.
+
+    If retrieval of the attribute fails from the value then an ExtractorException
+    is raised.
     """
     def __init__(self, attribute):
+        """
+        :param attribute: A valid attribute name value
+        """
         self.attribute = attribute
 
     def __call__(self, value, **flags):
+        """
+        :param value: The value to attempt extraction from
+        :param flags: A dictionary of flags
+        :return: The extracted value
+        :raise: ExtractorException
+        """
         if hasattr(value, self.attribute):
             return getattr(value, self.attribute)
         else:
             raise ExtractorException('{} has no attribute `{}`'.format(value, self.attribute))
 
-    def __getattr__(self, attribute):
-        class AttributeExtractor(_AttributeExtractor):
-            pass
+    def __getitem__(self, attribute):
+        """
+        :param attribute: A valid attribute name value
+        :return: a Chain instance
+        :rtype: rightshift._Chain
+        """
+        return self.__getattr__(attribute)
 
+    def __getattr__(self, attribute):
+        """
+        :param attribute: A valid attribute name value
+        :return: a Chain instance
+        :rtype: rightshift._Chain
+        """
+        class AttributeExtractor(_AttributeExtractor): pass
+
+        #TODO: Fix this to work beyond two levels of depth
         return self >> AttributeExtractor(attribute)
 
 
+class __AttributeExtractorCreator(object):
+    """
+    The __AttributeExtractorCreator is a private class that is instantiated once
+    and assigned to the `attr` variable in the rightshift.extractors module.
+
+    This allows syntax of the form item['key'], item.key and item('key') to be
+    used in place of the less compact _ItemExtractor('key') form.
+    """
+    def __call__(self, attribute):
+        """
+        :param attribute: A valid attribute name value
+        :return: an AttributeExtractor instance
+        :rtype: _AttributeExtractor
+        """
+        return self.__getattr__(attribute)
+
+    def __getitem__(self, attribute):
+        """
+        :param attribute: A valid attribute name value
+        :return: an AttributeExtractor instance
+        :rtype: _AttributeExtractor
+        """
+        return self.__getattr__(attribute)
+
+    def __getattr__(self, attribute):
+        """
+        :param attribute: A valid attribute name value
+        :return: an AttributeExtractor instance
+        :rtype: _AttributeExtractor
+        """
+        class AttributeExtractor(_AttributeExtractor): pass
+
+        return AttributeExtractor(attribute)
+
+    def __setattr__(self, key, value):
+        """
+        :raise: NotImplementedError
+        """
+        raise NotImplementedError
+
 attr = __AttributeExtractorCreator()
+"""
+attr is a special shortcut to enable working with the _AttributeExtractor class
+to feel more natural. attr is an instance of the private __AttributeExtractorCreator
+class which mirrors the functionality of the _AttributeExtractor class but is not
+actually an instance of _AttributeExtractor itself. This allows attr to be used
+to generate natural looking attr extraction expressions.
+
+Examples:
+
+attr.x is equivalent to _ItemExtractor('x')
+attr.x.y is equivalent to _ItemExtractor('x').y
+"""
 
 
-class _PatternGroupExtractor(Extractor):
-    """
-    TODO: Document
-    """
-    pass
+class _PatternGroupExtractor(Extractor): pass
 
 
 def pattern_group(pattern, group=1, search=True):
+    """
+    :param pattern: A string or compiled Regular Expression pattern
+    :param group: A string or numeric group value
+    :param search: A boolean value indicating whether the search or match method should be used
+    :return: a PatternGroupExtractor instance
+    :rtype: _PatternGroupExtractor
+    """
     from past.builtins import basestring
     if isinstance(pattern, basestring):
         from re import compile
         pattern = compile(pattern)
 
     class PatternGroupExtractor(_PatternGroupExtractor):
-        def __call__(self, value, **flags):
+        def __call__(self, value, pattern_group__group=group,
+                     pattern_group__search=search, **flags):
             try:
-                method = pattern.search if search else pattern.match
+                method = pattern.search if pattern_group__search else pattern.match
                 match = method(value)
                 if match is None:
                     raise ExtractorException
-                return match.group(group)
+                return match.group(pattern_group__group)
             except Exception as e:
                 raise_from(ExtractorException, e)
 
