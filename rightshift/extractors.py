@@ -30,6 +30,14 @@ def identity():
     return IdentityExtractor()
 
 
+class __ItemExtractorCreator(object):
+
+    def __getitem__(self, item):
+        class ItemExtractor(_ItemExtractor):
+            pass
+        return _ItemExtractor(item)
+
+
 class _ItemExtractor(Extractor):
     """
     An ItemExtractor instances expects to be called with a value that will be
@@ -39,17 +47,56 @@ class _ItemExtractor(Extractor):
     If retrieval of the item fails from the value then a TransformationException
     is raised.
     """
+    def __init__(self, item):
+        self.item = item
+
+    def __call__(self, value, **flags):
+        try:
+            return value[self.item]
+        except Exception as e:
+            raise_from(ExtractorException, e)
 
     def __getitem__(self, item):
         class ItemExtractor(_ItemExtractor):
-            def __call__(self, value, **flags):
-                try:
-                    return value[item]
-                except Exception as e:
-                    raise_from(ExtractorException, e)
-        return ItemExtractor()
+            pass
 
-item = _ItemExtractor()
+        return self >> ItemExtractor(item)
+
+item = __ItemExtractorCreator()
+
+
+class __AttributeExtractorCreator(object):
+    def __getattr__(self, attribute):
+        class AttributeExtractor(_AttributeExtractor):
+            pass
+
+        return AttributeExtractor(attribute)
+
+    def __setattr__(self, key, value):
+        raise NotImplementedError
+
+
+class _AttributeExtractor(Extractor):
+    """
+    TODO: Document
+    """
+    def __init__(self, attribute):
+        self.attribute = attribute
+
+    def __call__(self, value, **flags):
+        if hasattr(value, self.attribute):
+            return getattr(value, self.attribute)
+        else:
+            raise ExtractorException('{} has no attribute `{}`'.format(value, self.attribute))
+
+    def __getattr__(self, attribute):
+        class AttributeExtractor(_AttributeExtractor):
+            pass
+
+        return self >> AttributeExtractor(attribute)
+
+
+attr = __AttributeExtractorCreator()
 
 
 class _PatternGroupExtractor(Extractor):
