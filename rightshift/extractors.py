@@ -1,4 +1,5 @@
-from rightshift import Transformer, TransformationException
+from rightshift import Transformer, TransformationException, Chain, \
+    ChainException
 from future.utils import raise_from
 
 __author__ = 'adam.jorgensen.za@gmail.com'
@@ -22,6 +23,20 @@ class Identity(Extractor):
 
 
 identity = Identity()
+
+
+class ItemChainException(ChainException): pass
+
+
+class _ItemChain(Chain):
+    """
+    TODO: Document
+    """
+    def __getattr__(self, item_name):
+        return self.__getitem__(item_name)
+
+    def __getitem__(self, item_or_slice):
+        return _ItemChain(self, Item(item_or_slice))
 
 
 class Item(Extractor):
@@ -55,7 +70,7 @@ class Item(Extractor):
         """
         :param item_name: A valid item name value
         :return: a Chain instance
-        :rtype: rightshift._Chain
+        :rtype: rightshift.Chain
         """
         return self.__getitem__(item_name)
 
@@ -63,26 +78,24 @@ class Item(Extractor):
         """
         :param item_or_slice: A valid item name or slice value
         :return: a Chain instance
-        :rtype: rightshift._Chain
+        :rtype: rightshift.Chain
         """
-
-        #TODO: Fix this to work beyond two levels of depth
-        return self >> Item(item_or_slice)
+        return _ItemChain(self, Item(item_or_slice))
 
 
-class __ItemExtractorCreator(object):
+class __ItemCreator(object):
     """
-    The __ItemExtractorCreator is a private class that is instantiated once
+    The _ItemCreator is a private class that is instantiated once
     and assigned to the `item` variable in the rightshift.extractors module.
 
     This allows syntax of the form item['key'], item.key and item('key') to be
-    used in place of the less compact _ItemExtractor('key') form.
+    used in place of the less compact Item('key') form.
     """
     def __call__(self, item_or_slice):
         """
         :param item_or_slice: A valid item name or slice value
         :return: an ItemExtractor instance
-        :rtype: _ItemExtractor
+        :rtype: Item
         """
         return self.__getitem__(item_or_slice)
 
@@ -90,7 +103,7 @@ class __ItemExtractorCreator(object):
         """
         :param item_name: A valid item name value
         :return: an ItemExtractor instance
-        :rtype: _ItemExtractor
+        :rtype: Item
         """
         return self.__getitem__(item_name)
 
@@ -98,25 +111,39 @@ class __ItemExtractorCreator(object):
         """
         :param item_or_slice: A valid item name or slice value
         :return: an ItemExtractor instance
-        :rtype: _ItemExtractor
+        :rtype: Item
         """
 
         return Item(item_or_slice)
 
 
-item = __ItemExtractorCreator()
+item = __ItemCreator()
 """
-item is a special shortcut to enable working with the _ItemExtractor class to
-feel more natural. item is an instance of the private __ItemExtractorCreator
-class which mirrors the functionality of the _ItemExtractor class but is not
-actually an instance of _ItemExtractor itself. This allows item to be used to
+item is a special shortcut to enable working with the Item class to
+feel more natural. item is an instance of the private __ItemCreator
+class which mirrors the functionality of the Item class but is not
+actually an instance of Item itself. This allows item to be used to
 generate natural looking item extraction expressions.
 
 Examples:
 
-item['x'] is equivalent to _ItemExtractor('x')
-item['x']['y'] is equivalent to _ItemExtractor('x')['y']
+item['x'] is equivalent to Item('x')
+item['x']['y'] is equivalent to Item('x')['y']
 """
+
+
+class AttributeChainException(ChainException): pass
+
+
+class _AttributeChain(Chain):
+    """
+    TODO: Document
+    """
+    def __getattr__(self, attribute):
+        return self.__getitem__(attribute)
+
+    def __getitem__(self, attribute):
+        return _AttributeChain(self, Attribute(attribute))
 
 
 class Attribute(Extractor):
@@ -159,23 +186,22 @@ class Attribute(Extractor):
         :return: a Chain instance
         :rtype: rightshift._Chain
         """
-        #TODO: Fix this to work beyond two levels of depth
-        return self >> Attribute(attribute)
+        return _AttributeChain(self, Attribute(attribute))
 
 
-class __AttributeExtractorCreator(object):
+class __AttributeCreator(object):
     """
-    The __AttributeExtractorCreator is a private class that is instantiated once
+    The _AttributeCreator is a private class that is instantiated once
     and assigned to the `attr` variable in the rightshift.extractors module.
 
     This allows syntax of the form item['key'], item.key and item('key') to be
-    used in place of the less compact _ItemExtractor('key') form.
+    used in place of the less compact Item('key') form.
     """
     def __call__(self, attribute):
         """
         :param attribute: A valid attribute name value
         :return: an AttributeExtractor instance
-        :rtype: _AttributeExtractor
+        :rtype: Attribute
         """
         return self.__getattr__(attribute)
 
@@ -183,7 +209,7 @@ class __AttributeExtractorCreator(object):
         """
         :param attribute: A valid attribute name value
         :return: an AttributeExtractor instance
-        :rtype: _AttributeExtractor
+        :rtype: Attribute
         """
         return self.__getattr__(attribute)
 
@@ -191,7 +217,7 @@ class __AttributeExtractorCreator(object):
         """
         :param attribute: A valid attribute name value
         :return: an AttributeExtractor instance
-        :rtype: _AttributeExtractor
+        :rtype: Attribute
         """
 
         return Attribute(attribute)
@@ -202,18 +228,18 @@ class __AttributeExtractorCreator(object):
         """
         raise NotImplementedError
 
-attr = __AttributeExtractorCreator()
+attr = __AttributeCreator()
 """
-attr is a special shortcut to enable working with the _AttributeExtractor class
-to feel more natural. attr is an instance of the private __AttributeExtractorCreator
-class which mirrors the functionality of the _AttributeExtractor class but is not
-actually an instance of _AttributeExtractor itself. This allows attr to be used
+attr is a special shortcut to enable working with the Attribute class
+to feel more natural. attr is an instance of the private __AttributeCreator
+class which mirrors the functionality of the Attribute class but is not
+actually an instance of Attribute itself. This allows attr to be used
 to generate natural looking attr extraction expressions.
 
 Examples:
 
-attr.x is equivalent to _ItemExtractor('x')
-attr.x.y is equivalent to _ItemExtractor('x').y
+attr.x is equivalent to Item('x')
+attr.x.y is equivalent to Item('x').y
 """
 
 
@@ -243,4 +269,7 @@ class PatternGroup(Extractor):
             raise_from(ExtractorException, e)
 
 pattern_group = PatternGroup
+"""
+TODO: Document
+"""
 
