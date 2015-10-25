@@ -10,7 +10,7 @@ class ExtractorException(TransformationException): pass
 class Extractor(Transformer): pass
 
 
-class _IdentityExtractor(Extractor):
+class Identity(Extractor):
     """
     The IdentityExtractor is extremely simple and simply returns whatever
     value it is called with. However, it does inherit from the Extractor
@@ -21,17 +21,10 @@ class _IdentityExtractor(Extractor):
         return value
 
 
-def identity():
-    """
-    :return: an IdentityExtractor instance
-    :rtype: _IdentityExtractor
-    """
-    class IdentityExtractor(_IdentityExtractor): pass
-
-    return IdentityExtractor()
+identity = Identity()
 
 
-class _ItemExtractor(Extractor):
+class Item(Extractor):
     """
     An ItemExtractor instances expects to be called with a value that will be
     accessed as if it were a container type in order to retrieve the item or
@@ -72,10 +65,9 @@ class _ItemExtractor(Extractor):
         :return: a Chain instance
         :rtype: rightshift._Chain
         """
-        class ItemExtractor(_ItemExtractor): pass
 
         #TODO: Fix this to work beyond two levels of depth
-        return self >> ItemExtractor(item_or_slice)
+        return self >> Item(item_or_slice)
 
 
 class __ItemExtractorCreator(object):
@@ -108,9 +100,8 @@ class __ItemExtractorCreator(object):
         :return: an ItemExtractor instance
         :rtype: _ItemExtractor
         """
-        class ItemExtractor(_ItemExtractor): pass
 
-        return ItemExtractor(item_or_slice)
+        return Item(item_or_slice)
 
 
 item = __ItemExtractorCreator()
@@ -128,7 +119,7 @@ item['x']['y'] is equivalent to _ItemExtractor('x')['y']
 """
 
 
-class _AttributeExtractor(Extractor):
+class Attribute(Extractor):
     """
     An AttributeExtractor instance can be called with a value in order to
     attempt to retrieve an attribute on that value.
@@ -168,10 +159,8 @@ class _AttributeExtractor(Extractor):
         :return: a Chain instance
         :rtype: rightshift._Chain
         """
-        class AttributeExtractor(_AttributeExtractor): pass
-
         #TODO: Fix this to work beyond two levels of depth
-        return self >> AttributeExtractor(attribute)
+        return self >> Attribute(attribute)
 
 
 class __AttributeExtractorCreator(object):
@@ -204,9 +193,8 @@ class __AttributeExtractorCreator(object):
         :return: an AttributeExtractor instance
         :rtype: _AttributeExtractor
         """
-        class AttributeExtractor(_AttributeExtractor): pass
 
-        return AttributeExtractor(attribute)
+        return Attribute(attribute)
 
     def __setattr__(self, key, value):
         """
@@ -229,34 +217,30 @@ attr.x.y is equivalent to _ItemExtractor('x').y
 """
 
 
-class _PatternGroupExtractor(Extractor): pass
+class PatternGroup(Extractor):
+    def __init__(self, pattern, group=1, search=True):
+        """
+        :param pattern: A string or compiled Regular Expression pattern
+        :param group: A string or numeric group value
+        :param search: A boolean value indicating whether the search or match method should be used
+        """
+        from past.builtins import basestring
+        if isinstance(pattern, basestring):
+            from re import compile
+            pattern = compile(pattern)
+        self.pattern = pattern
+        self.group = group
+        self.search = search
 
+    def __call__(self, value, **flags):
+        try:
+            method = self.pattern.search if flags.get('pattern_group__search', self.search) else self.pattern.match
+            match = method(value)
+            if match is None:
+                raise ExtractorException
+            return match.group(flags.get('pattern_group__group', self.group))
+        except Exception as e:
+            raise_from(ExtractorException, e)
 
-def pattern_group(pattern, group=1, search=True):
-    """
-    :param pattern: A string or compiled Regular Expression pattern
-    :param group: A string or numeric group value
-    :param search: A boolean value indicating whether the search or match method should be used
-    :return: a PatternGroupExtractor instance
-    :rtype: _PatternGroupExtractor
-    """
-    from past.builtins import basestring
-    if isinstance(pattern, basestring):
-        from re import compile
-        pattern = compile(pattern)
-
-    class PatternGroupExtractor(_PatternGroupExtractor):
-        def __call__(self, value, pattern_group__group=group,
-                     pattern_group__search=search, **flags):
-            try:
-                method = pattern.search if pattern_group__search else pattern.match
-                match = method(value)
-                if match is None:
-                    raise ExtractorException
-                return match.group(pattern_group__group)
-            except Exception as e:
-                raise_from(ExtractorException, e)
-
-    return PatternGroupExtractor()
-
+pattern_group = PatternGroup
 
