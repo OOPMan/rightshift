@@ -191,7 +191,27 @@ class Tupling(Transformer):
             return Tupling(False, *transformers)
         return super(Tupling, self).__and__(other)
 
-tupling = Tupling
+
+def tupling(*transformers):
+    """
+    TODO: Document
+
+    :param transformers:
+    :return:
+    :rtype: Tupling
+    """
+    return Tupling(False, *transformers)
+
+
+def lazy_tupling(*transformers):
+    """
+    TODO: Document
+
+    :param transformers:
+    :return:
+    :rtype: Tupling
+    """
+    return Tupling(True, *transformers)
 
 
 class Flags(Transformer):
