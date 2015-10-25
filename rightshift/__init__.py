@@ -55,99 +55,61 @@ class Transformer(object):
         :return:
         """
         if isinstance(other, Transformer):
-            class Chain(_Chain):
-                """
-                A Chain is a special Transform that is used to implement the >> operation
-                on Transforms.
-
-                When two Transforms are chained together using the >> operator the output
-                of the >> operator is a new Transform that can be called in order to return
-                the result of calling the right operand with the result of calling the left
-                operand. I.e. (a >> b)(x) is synonymous with b(a(x))
-                """
-                def __init__(self, left, right):
-                    self.left = left
-                    self.right = right
-
-                def __call__(self, value, **flags):
-                    if isinstance(self.right, _Flags):
-                        use_flags = copy(self.right.flags)
-                        use_flags.update(flags)
-                        return self.left(value, **use_flags)
-                    else:
-                        return self.right(self.left(value, **flags), **flags)
-
             return Chain(self, other)
 
         raise TypeError('{} is not an instance of Transformer'.format(other))
 
-    def __ror__(self, other):
+    def __or__(self, other):
         """
         TODO: Document
         """
         transformers = [other]
-        if isinstance(other, _Detupling):
+        if isinstance(other, Detupling):
             transformers = list(copy(other.transformers))
         if isinstance(other, Transformer):
-            class Detupling(_Detupling):
-                """
-                TODO: Document
-                """
-                def __ror__(self, other):
-                    """
-                    TODO: Document
-                    """
-                    transformers = [other]
-                    if isinstance(other, _Tupling):
-                        transformers = list(copy(other.transformers))
-                    if isinstance(other, Transformer):
-                        transformers.extend(self.transformers)
-                        return Detupling(*transformers)
-                    return super(Detupling, self).__ror__(other)
-
             transformers.append(self)
             return Detupling(*transformers)
 
         raise TransformationException('Unable to detuple {} with {}'.format(self, other))
 
-    def __rand__(self, other):
+    def __and__(self, other):
         """
         TODO: Document
         """
         transformers = [other]
-        if isinstance(other, _Tupling):
+        if isinstance(other, Tupling):
             transformers = list(copy(other.transformers))
         if isinstance(other, Transformer):
-            class Tupling(_Tupling):
-                """
-                TODO: Document
-                """
-                def __rand__(self, other):
-                    """
-                    TODO: Document
-                    """
-                    transformers = [other]
-                    if isinstance(other, _Tupling):
-                        transformers = list(copy(other.transformers))
-                    if isinstance(other, Transformer):
-                        transformers.extend(self.transformers)
-                        return Tupling(*transformers)
-                    return super(Tupling, self).__rand__(other)
-
             transformers.append(self)
             return Tupling(*transformers)
 
         raise TransformationException('Unable to tuple {} with {}'.format(self, other))
 
 
-class _Chain(Transformer):
+class Chain(Transformer):
     """
-    TODO: Document
+    A Chain is a special Transform that is used to implement the >> operation
+    on Transforms.
+
+    When two Transforms are chained together using the >> operator the output
+    of the >> operator is a new Transform that can be called in order to return
+    the result of calling the right operand with the result of calling the left
+    operand. I.e. (a >> b)(x) is synonymous with b(a(x))
     """
-    pass
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    def __call__(self, value, **flags):
+        if isinstance(self.right, Flags):
+            use_flags = copy(self.right.flags)
+            use_flags.update(flags)
+            return self.left(value, **use_flags)
+        else:
+            return self.right(self.left(value, **flags), **flags)
 
 
-class _Detupling(Transformer):
+class Detupling(Transformer):
     """
     TODO: Document
     """
@@ -171,8 +133,20 @@ class _Detupling(Transformer):
                 pass
         raise TransformationException('Failed to detuple {}'.format(value))
 
+    def __or__(self, other):
+        """
+        TODO: Document
+        """
+        transformers = [other]
+        if isinstance(other, Detupling):
+            transformers = list(copy(other.transformers))
+        if isinstance(other, Transformer):
+            transformers.extend(self.transformers)
+            return Detupling(*transformers)
+        return super(Detupling, self).__or__(other)
 
-class _Tupling(Transformer):
+
+class Tupling(Transformer):
     """
     TODO: Document
     """
@@ -197,11 +171,20 @@ class _Tupling(Transformer):
                 for transformer in self.transformers
             ]
 
+    def __and__(self, other):
+        """
+        TODO: Document
+        """
+        transformers = [other]
+        if isinstance(other, Tupling):
+            transformers = list(copy(other.transformers))
+        if isinstance(other, Transformer):
+            transformers.extend(self.transformers)
+            return Tupling(*transformers)
+        return super(Tupling, self).__and__(other)
 
-class _Flags(Transformer): pass
 
-
-def flags(**flags):
+class Flags(Transformer):
     """
     Flags are a special Transform that allows for data to be passed down to
     Transform chain in order to signal Transforms to modify their behaviour.
@@ -211,15 +194,7 @@ def flags(**flags):
     is passed on while the Flag object itself is not called as it does not
     implement __call__
     """
-    class Flags(_Flags):
+    def __init__(self, flags):
+        self.flags = flags
 
-        @property
-        def flags(self):
-            """
-            TODO: Document
-
-            :return:
-            """
-            return flags
-
-    return Flags()
+flags = Flags
