@@ -63,11 +63,12 @@ class Transformer(object):
         """
         TODO: Document
         """
-        transformers = [other]
-        if isinstance(other, Detupling):
-            transformers = list(copy(other.transformers))
         if isinstance(other, Transformer):
-            transformers.append(self)
+            transformers = [self]
+            if isinstance(other, Detupling):
+                transformers.extend(copy(other.transformers))
+            else:
+                transformers.append(other)
             return Detupling(*transformers)
 
         raise TransformationException('Unable to detuple {} with {}'.format(self, other))
@@ -76,12 +77,13 @@ class Transformer(object):
         """
         TODO: Document
         """
-        transformers = [other]
-        if isinstance(other, Tupling):
-            transformers = list(copy(other.transformers))
         if isinstance(other, Transformer):
-            transformers.append(self)
-            return Tupling(*transformers)
+            transformers = [self]
+            if isinstance(other, Tupling):
+                transformers.extend(copy(other.transformers))
+            else:
+                transformers.append(other)
+            return Tupling(False, *transformers)
 
         raise TransformationException('Unable to tuple {} with {}'.format(self, other))
 
@@ -137,37 +139,42 @@ class Detupling(Transformer):
         """
         TODO: Document
         """
-        transformers = [other]
-        if isinstance(other, Detupling):
-            transformers = list(copy(other.transformers))
         if isinstance(other, Transformer):
-            transformers.extend(self.transformers)
+            transformers = list(copy(self.transformers))
+            if isinstance(other, Detupling):
+                transformers.extend(other.transformers)
+            else:
+                transformers.append(other)
             return Detupling(*transformers)
         return super(Detupling, self).__or__(other)
+
+detupling = Detupling
 
 
 class Tupling(Transformer):
     """
     TODO: Document
     """
-    def __init__(self, *transformers):
+    def __init__(self, generator=False, *transformers):
         """
         TODO: Document
         """
         self.transformers = transformers
+        self.generator = generator
 
-    def __call__(self, value, tupling__generator=False, **flags):
+    def __call__(self, value, **flags):
         """
         TODO: Document
         """
-        if tupling__generator:
+
+        if flags.get('tupling__generator', self.generator):
             return (
-                transformer(value, tupling_generator=tupling__generator, **flags)
+                transformer(value, **flags)
                 for transformer in self.transformers
             )
         else:
             return [
-                transformer(value, tupling__generator=tupling__generator, **flags)
+                transformer(value, **flags)
                 for transformer in self.transformers
             ]
 
@@ -175,13 +182,16 @@ class Tupling(Transformer):
         """
         TODO: Document
         """
-        transformers = [other]
-        if isinstance(other, Tupling):
-            transformers = list(copy(other.transformers))
         if isinstance(other, Transformer):
-            transformers.extend(self.transformers)
-            return Tupling(*transformers)
+            transformers = list(copy(self.transformers))
+            if isinstance(other, Tupling):
+                transformers.extend(other.transformers)
+            else:
+                transformers.append(other)
+            return Tupling(False, *transformers)
         return super(Tupling, self).__and__(other)
+
+tupling = Tupling
 
 
 class Flags(Transformer):
@@ -198,3 +208,4 @@ class Flags(Transformer):
         self.flags = flags
 
 flags = Flags
+
