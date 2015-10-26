@@ -11,20 +11,6 @@ class ExtractorException(TransformationException): pass
 class Extractor(Transformer): pass
 
 
-class Identity(Extractor):
-    """
-    The IdentityExtractor is extremely simple and simply returns whatever
-    value it is called with. However, it does inherit from the Extractor
-    class and hence inherits the & and | functionality implement by the
-    Extractor class.
-    """
-    def __call__(self, value, **flags):
-        return value
-
-
-identity = Identity()
-
-
 class ItemChainException(ChainException): pass
 
 
