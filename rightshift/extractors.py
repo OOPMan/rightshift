@@ -28,15 +28,25 @@ identity = Identity()
 class ItemChainException(ChainException): pass
 
 
-class _ItemChain(Chain):
+class ItemChain(Chain):
     """
     TODO: Document
     """
     def __getattr__(self, item_name):
+        """
+        :param item_name: A valid item name value
+        :return: an ItemChain instance
+        :rtype: ItemChain
+        """
         return self.__getitem__(item_name)
 
     def __getitem__(self, item_or_slice):
-        return _ItemChain(self, Item(item_or_slice))
+        """
+        :param item_or_slice: A valid item name or slice value
+        :return: an ItemChain instance
+        :rtype: ItemChain
+        """
+        return ItemChain(self, Item(item_or_slice))
 
 
 class Item(Extractor):
@@ -69,18 +79,18 @@ class Item(Extractor):
     def __getattr__(self, item_name):
         """
         :param item_name: A valid item name value
-        :return: a Chain instance
-        :rtype: rightshift.Chain
+        :return: an ItemChain instance
+        :rtype: ItemChain
         """
         return self.__getitem__(item_name)
 
     def __getitem__(self, item_or_slice):
         """
         :param item_or_slice: A valid item name or slice value
-        :return: a Chain instance
-        :rtype: rightshift.Chain
+        :return: an ItemChain instance
+        :rtype: ItemChain
         """
-        return _ItemChain(self, Item(item_or_slice))
+        return ItemChain(self, Item(item_or_slice))
 
 
 class __ItemCreator(object):
@@ -94,7 +104,7 @@ class __ItemCreator(object):
     def __call__(self, item_or_slice):
         """
         :param item_or_slice: A valid item name or slice value
-        :return: an ItemExtractor instance
+        :return: an Item instance
         :rtype: Item
         """
         return self.__getitem__(item_or_slice)
@@ -102,7 +112,7 @@ class __ItemCreator(object):
     def __getattr__(self, item_name):
         """
         :param item_name: A valid item name value
-        :return: an ItemExtractor instance
+        :return: an Item instance
         :rtype: Item
         """
         return self.__getitem__(item_name)
@@ -110,7 +120,7 @@ class __ItemCreator(object):
     def __getitem__(self, item_or_slice):
         """
         :param item_or_slice: A valid item name or slice value
-        :return: an ItemExtractor instance
+        :return: an Item instance
         :rtype: Item
         """
 
@@ -135,15 +145,25 @@ item['x']['y'] is equivalent to Item('x')['y']
 class AttributeChainException(ChainException): pass
 
 
-class _AttributeChain(Chain):
+class AttributeChain(Chain):
     """
     TODO: Document
     """
     def __getattr__(self, attribute):
+        """
+        :param attribute: A valid attribute name value
+        :return: an AttributeChain instance
+        :rtype: AttributeChain
+        """
         return self.__getitem__(attribute)
 
     def __getitem__(self, attribute):
-        return _AttributeChain(self, Attribute(attribute))
+        """
+        :param attribute: A valid attribute name value
+        :return: an AttributeChain instance
+        :rtype: AttributeChain
+        """
+        return AttributeChain(self, Attribute(attribute))
 
 
 class Attribute(Extractor):
@@ -175,18 +195,18 @@ class Attribute(Extractor):
     def __getitem__(self, attribute):
         """
         :param attribute: A valid attribute name value
-        :return: a Chain instance
-        :rtype: rightshift._Chain
+        :return: an AttributeChain instance
+        :rtype: AttributeChain
         """
         return self.__getattr__(attribute)
 
     def __getattr__(self, attribute):
         """
         :param attribute: A valid attribute name value
-        :return: a Chain instance
-        :rtype: rightshift._Chain
+        :return: an AttributeChain instance
+        :rtype: AttributeChain
         """
-        return _AttributeChain(self, Attribute(attribute))
+        return AttributeChain(self, Attribute(attribute))
 
 
 class __AttributeCreator(object):
