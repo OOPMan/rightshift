@@ -103,12 +103,11 @@ class Chain(Transformer):
         self.right = right
 
     def __call__(self, value, **flags):
+        use_flags = flags
         if isinstance(self.right, Flags):
             use_flags = copy(self.right.flags)
             use_flags.update(flags)
-            return self.left(value, **use_flags)
-        else:
-            return self.right(self.left(value, **flags), **flags)
+        return self.right(self.left(value, **use_flags), **use_flags)
 
 
 class Detupling(Transformer):
@@ -149,7 +148,9 @@ class Detupling(Transformer):
         return super(Detupling, self).__or__(other)
 
 detupling = Detupling
-
+"""
+TODO: Document
+"""
 
 class Tupling(Transformer):
     """
@@ -192,9 +193,28 @@ class Tupling(Transformer):
         return super(Tupling, self).__and__(other)
 
 tupling = Tupling
+"""
+TODO: Document
+"""
 
 
-class Flags(Transformer):
+class Identity(Transformer):
+    """
+    The IdentityExtractor is extremely simple and simply returns whatever
+    value it is called with. However, it does inherit from the Extractor
+    class and hence inherits the & and | functionality implement by the
+    Extractor class.
+    """
+    def __call__(self, value, **flags):
+        return value
+
+identity = Identity()
+"""
+TODO: Document
+"""
+
+
+class Flags(Identity):
     """
     Flags are a special Transform that allows for data to be passed down to
     Transform chain in order to signal Transforms to modify their behaviour.
@@ -208,4 +228,7 @@ class Flags(Transformer):
         self.flags = flags
 
 flags = Flags
+"""
+TODO: Document
+"""
 
