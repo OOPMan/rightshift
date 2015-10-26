@@ -54,38 +54,65 @@ class Transformer(object):
         :param other:
         :return:
         """
-        if isinstance(other, Transformer):
-            return Chain(self, other)
+        if not isinstance(other, Transformer):
+            other = Value(other)
 
-        raise TypeError('{} is not an instance of Transformer'.format(other))
+        return Chain(self, other)
+
+    def __rrshift__(self, other):
+        """
+        TODO: Document
+
+        :param other:
+        :return:
+        """
+        return Chain(Value(other), self)
 
     def __or__(self, other):
         """
         TODO: Document
         """
-        if isinstance(other, Transformer):
-            transformers = [self]
-            if isinstance(other, Detupling):
-                transformers.extend(copy(other.transformers))
-            else:
-                transformers.append(other)
-            return Detupling(*transformers)
+        if not isinstance(other, Transformer):
+            other = Value(other)
 
-        raise TransformationException('Unable to detuple {} with {}'.format(self, other))
+        transformers = [self]
+        if isinstance(other, Detupling):
+            transformers.extend(copy(other.transformers))
+        else:
+            transformers.append(other)
+        return Detupling(*transformers)
+
+    def __ror__(self, other):
+        """
+        TODO: Document
+
+        :param other:
+        :return:
+        """
+        return Value(other).__or__(self)
 
     def __and__(self, other):
         """
         TODO: Document
         """
-        if isinstance(other, Transformer):
-            transformers = [self]
-            if isinstance(other, Tupling):
-                transformers.extend(copy(other.transformers))
-            else:
-                transformers.append(other)
-            return Tupling(False, *transformers)
+        if not isinstance(other, Transformer):
+            other = Value(other)
 
-        raise TransformationException('Unable to tuple {} with {}'.format(self, other))
+        transformers = [self]
+        if isinstance(other, Tupling):
+            transformers.extend(copy(other.transformers))
+        else:
+            transformers.append(other)
+        return Tupling(False, *transformers)
+
+    def __rand__(self, other):
+        """
+        TODO: Document
+
+        :param other:
+        :return:
+        """
+        return Value(other).__and__(self)
 
 
 class Chain(Transformer):
@@ -216,12 +243,27 @@ def lazy_tupling(*transformers):
     return Tupling(True, *transformers)
 
 
+class Value(Transformer):
+    """
+    Value is a simple Transform that, when called, will simply return the
+    value it was instantiated with. Value is used to implement inter-operability
+    between Transforms and non-Transform instances.
+    """
+    def __init__(self, value):
+        self.value = value
+
+    def __call__(self, value, **flags):
+        return self.value
+
+value = Value
+"""
+TODO: Document
+"""
+
+
 class Identity(Transformer):
     """
-    The IdentityExtractor is extremely simple and simply returns whatever
-    value it is called with. However, it does inherit from the Extractor
-    class and hence inherits the & and | functionality implement by the
-    Extractor class.
+    Identity is extremely simple and simply returns whatever value it is called with.
     """
     def __call__(self, value, **flags):
         return value
