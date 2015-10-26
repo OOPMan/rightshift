@@ -134,7 +134,12 @@ class Chain(Transformer):
         if isinstance(self.right, Flags):
             use_flags = copy(self.right.flags)
             use_flags.update(flags)
-        return self.right(self.left(value, **use_flags), **use_flags)
+        try:
+            return self.right(self.left(value, **use_flags), **use_flags)
+        except TransformationException as e:
+            if isinstance(self.right, Default):
+                return self.right.default
+            raise e
 
 
 class Detupling(Transformer):
@@ -292,3 +297,15 @@ flags = Flags
 TODO: Document
 """
 
+
+class Default(Identity):
+    """
+    TODO: Document
+    """
+    def __init__(self, default):
+        self.default = default
+
+default = Default
+"""
+TODO: Document
+"""
