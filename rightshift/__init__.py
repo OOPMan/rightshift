@@ -11,14 +11,6 @@ class TransformationException(BaseException):
     pass
 
 
-class ChainException(TransformationException):
-    """
-    An exception that is raised when an attempt to chain two Transforms together
-    fails.
-    """
-    pass
-
-
 class Transformer(object):
     """
     A Transform is an object which can be called with a single input value.
@@ -57,6 +49,11 @@ class Transformer(object):
         if not isinstance(other, Transformer):
             other = Value(other)
 
+        if isinstance(other, Flags):
+            return FlagsChain(other.flags, self)
+        if isinstance(other, Default):
+            return DefaultChain(other.default, self)
+
         return Chain(self, other)
 
     def __rrshift__(self, other):
@@ -66,7 +63,7 @@ class Transformer(object):
         :param other:
         :return:
         """
-        return Chain(Value(other), self)
+        return Value(other) >> self
 
     def __or__(self, other):
         """
@@ -89,7 +86,7 @@ class Transformer(object):
         :param other:
         :return:
         """
-        return Value(other).__or__(self)
+        return Value(other) | self
 
     def __and__(self, other):
         """
@@ -112,7 +109,7 @@ class Transformer(object):
         :param other:
         :return:
         """
-        return Value(other).__and__(self)
+        return Value(other) & self
 
 
 class Chain(Transformer):
@@ -126,20 +123,100 @@ class Chain(Transformer):
     operand. I.e. (a >> b)(x) is synonymous with b(a(x))
     """
     def __init__(self, left, right):
+        """
+        TODO: Document
+        """
         self.left = left
         self.right = right
 
     def __call__(self, value, **flags):
-        use_flags = flags
-        if isinstance(self.right, Flags):
-            use_flags = copy(self.right.flags)
-            use_flags.update(flags)
+        """
+        TODO: Document
+        """
+        return self.right(self.left(value, **flags), **flags)
+
+
+class FlagsChain(Chain):
+    """
+    TODO: Document
+    """
+    def __init__(self, flags, left):
+        """
+        TODO: Document
+        """
+        super(FlagsChain, self).__init__(left, None)
+        self.flags = flags
+
+    def __call__(self, value, **flags):
+        """
+        TODO: Document
+        """
+        use_flags = copy(self.flags)
+        use_flags.update(flags)
+        return self.left(value, **use_flags)
+
+
+class Flags(Transformer):
+    """
+    Flags are a special Transform that allows for data to be passed down to
+    Transform chain in order to signal Transforms to modify their behaviour.
+
+    Flags are supported in this by the Chain Transform which is aware of Flags
+    and handles them in a special fashion to ensure that the Flag information
+    is passed on while the Flag object itself is not called as it does not
+    implement __call__
+    """
+    def __init__(self, **flags):
+        """
+        TODO: Document
+        """
+        self.flags = flags
+
+flags = Flags
+"""
+TODO: Document
+"""
+
+
+class DefaultChain(Chain):
+    """
+    TODO: Document
+    """
+    def __init__(self, default, left):
+        """
+        TODO: Document
+
+        :param default:
+        :param left:
+        :return:
+        """
+        super(DefaultChain, self).__init__(left, None)
+        self.default = default
+
+    def __call__(self, value, **flags):
+        """
+        TODO: Document
+        """
         try:
-            return self.right(self.left(value, **use_flags), **use_flags)
-        except TransformationException as e:
-            if isinstance(self.right, Default):
-                return self.right.default
-            raise e
+            return self.left(value, **flags)
+        except TransformationException:
+            return self.default
+
+
+class Default(Transformer):
+    """
+    TODO: Document
+    """
+    def __init__(self, default):
+        """
+        TODO: Document
+        """
+        self.default = default
+
+default = Default
+"""
+TODO: Document
+"""
 
 
 class Detupling(Transformer):
@@ -200,7 +277,6 @@ class Tupling(Transformer):
         """
         TODO: Document
         """
-
         if flags.get('tupling__generator', self.generator):
             return (
                 transformer(value, **flags)
@@ -255,9 +331,15 @@ class Value(Transformer):
     between Transforms and non-Transform instances.
     """
     def __init__(self, value):
+        """
+        TODO: Document
+        """
         self.value = value
 
     def __call__(self, value, **flags):
+        """
+        TODO: Document
+        """
         return self.value
 
 value = Value
@@ -271,41 +353,12 @@ class Identity(Transformer):
     Identity is extremely simple and simply returns whatever value it is called with.
     """
     def __call__(self, value, **flags):
+        """
+        TODO: Document
+        """
         return value
 
 identity = Identity()
-"""
-TODO: Document
-"""
-
-
-class Flags(Identity):
-    """
-    Flags are a special Transform that allows for data to be passed down to
-    Transform chain in order to signal Transforms to modify their behaviour.
-
-    Flags are supported in this by the Chain Transform which is aware of Flags
-    and handles them in a special fashion to ensure that the Flag information
-    is passed on while the Flag object itself is not called as it does not
-    implement __call__
-    """
-    def __init__(self, flags):
-        self.flags = flags
-
-flags = Flags
-"""
-TODO: Document
-"""
-
-
-class Default(Identity):
-    """
-    TODO: Document
-    """
-    def __init__(self, default):
-        self.default = default
-
-default = Default
 """
 TODO: Document
 """

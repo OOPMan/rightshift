@@ -1,5 +1,4 @@
-from rightshift import Transformer, TransformationException, Chain, \
-    ChainException
+from rightshift import Transformer, TransformationException, Chain
 from future.utils import raise_from
 
 __author__ = 'adam.jorgensen.za@gmail.com'
@@ -9,9 +8,6 @@ class ExtractorException(TransformationException): pass
 
 
 class Extractor(Transformer): pass
-
-
-class ItemChainException(ChainException): pass
 
 
 class ItemChain(Chain):
@@ -126,9 +122,6 @@ Examples:
 item['x'] is equivalent to Item('x')
 item['x']['y'] is equivalent to Item('x')['y']
 """
-
-
-class AttributeChainException(ChainException): pass
 
 
 class AttributeChain(Chain):
