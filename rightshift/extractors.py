@@ -33,7 +33,7 @@ class ItemChain(Chain):
 
 class Item(Extractor):
     """
-    An ItemExtractor instances expects to be called with a value that will be
+    An Item instances expects to be called with a value that will be
     accessed as if it were a container type in order to retrieve the item or
     slice that the ItemExtract was instantiated with.
 
@@ -147,7 +147,7 @@ class AttributeChain(Chain):
 
 class Attribute(Extractor):
     """
-    An AttributeExtractor instance can be called with a value in order to
+    An Attribute instance can be called with a value in order to
     attempt to retrieve an attribute on that value.
 
     If retrieval of the attribute fails from the value then an ExtractorException
@@ -243,6 +243,10 @@ attr.x.y is equivalent to Item('x').y
 
 
 class PatternGroup(Extractor):
+    """
+    A PatternGroup can be called with a string in order to attempt to extract a
+    new string from that
+    """
     def __init__(self, pattern, group=1, search=True):
         """
         :param pattern: A string or compiled Regular Expression pattern
