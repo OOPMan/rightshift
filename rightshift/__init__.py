@@ -3,7 +3,14 @@ from copy import copy
 __author__ = 'adam.jorgensen.za@gmail.com'
 
 
-class TransformationException(BaseException):
+class RightShiftException(BaseException):
+    """
+    The base class for all exceptions thrown by code in the rightshift library
+    """
+    pass
+
+
+class TransformationException(RightShiftException):
     """
     An exception that is raised when a Transform is unable to transform a value
     to another value.
