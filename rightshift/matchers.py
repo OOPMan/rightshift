@@ -21,11 +21,11 @@ class Matcher(Transformer):
         """
         if isinstance(other, Matcher):
             transformers = [self]
-            if isinstance(other, BooleanOr):
-                transformers.extend(copy(other.transformers))
+            if isinstance(other, Should):
+                transformers.extend(copy(other.matchers))
             else:
                 transformers.append(other)
-            return BooleanOr(*transformers)
+            return Should(*transformers)
 
         return super(Matcher, self).__or__(other)
 
@@ -35,63 +35,106 @@ class Matcher(Transformer):
         """
         if isinstance(other, Matcher):
             transformers = [self]
-            if isinstance(other, BooleanAnd):
-                transformers.extend(copy(other.transformers))
+            if isinstance(other, Must):
+                transformers.extend(copy(other.matchers))
             else:
                 transformers.append(other)
-            return BooleanAnd(*transformers)
+            return Must(*transformers)
 
         return super(Matcher, self).__and__(other)
 
 
-class BooleanAnd(Matcher):
+class Must(Matcher):
     """
     TODO: Document
     """
-    def __init__(self, *transformers):
+    def __init__(self, *matchers):
         """
         TODO: Document
         """
-        self.transformers = transformers
+        if not matchers:
+            raise MatcherException('At least one instance of rightshift.matchers'
+                                   '.Matcher must be supplied to Must.__init__')
+        for matcher in matchers:
+            if not isinstance(matcher, Matcher):
+                raise MatcherException('{} is not an instance of '
+                                       'rightshift.matchers.Matcher'.format(matcher))
+        self.matchers = matchers
 
     def __call__(self, value, **flags):
         """
         TODO: Document
         """
-        for transformer in self.transformers:
+        for transformer in self.matchers:
             if transformer(value, **flags) is False:
                 return False
         return True
 
-true_for_all_of = all = every = BooleanAnd
+must = Must
 """
-TODO: Document
+must is an alias to the Must class in righshift.matchers.
 """
 
 
-class BooleanOr(Matcher):
+class Should(Matcher):
     """
     TODO: Document
     """
-    def __init__(self, *transformers):
+    def __init__(self, *matchers):
         """
         TODO: Document
         """
-        self.transformers = transformers
+        if not matchers:
+            raise MatcherException('At least one instance of rightshift.matchers'
+                                   '.Matcher must be supplied to Should.__init__')
+        for matcher in matchers:
+            if not isinstance(matcher, Matcher):
+                raise MatcherException('{} is not an instance of '
+                                       'rightshift.matchers.Matcher'.format(matcher))
+        self.matchers = matchers
 
     def __call__(self, value, **flags):
         """
         TODO: Document
         """
-        for transformer in self.transformers:
+        for transformer in self.matchers:
             if transformer(value, **flags) is True:
                 return True
         return False
 
-true_for_one_of = some = any = BooleanOr
+should = Should
 """
-TODO: Document
+should is an alias to the Should class in rightshift.matchers.
 """
+
+
+class MustNot(Matcher):
+    """
+    TODO: Document
+    """
+    def __init__(self, *matchers):
+        """
+        TODO: Document
+        """
+        if not matchers:
+            raise MatcherException('At least one instance of rightshift.matchers'
+                                   '.Matcher must be supplied to MustNot.__init__')
+        for matcher in matchers:
+            if not isinstance(matcher, Matcher):
+                raise MatcherException('{} is not an instance of '
+                                       'rightshift.matchers.Matcher'.format(matcher))
+        self.matchers = matchers
+
+    def __call__(self, value, **flags):
+        """
+        TODO: Document
+        """
+        for matcher in self.matchers:
+            if matcher(value, **flags) is True:
+                return False
+        return True
+
+must_not = MustNot
 
 
 class IsInstance(Matcher):
@@ -241,25 +284,3 @@ value_is = __ValueIs()
 """
 TODO: Document
 """
-
-
-class IsNot(Matcher):
-    """
-    TODO: Document
-    """
-    def __init__(self, matcher):
-        """
-        TODO: Document
-        """
-        if not isinstance(matcher, Matcher):
-            raise MatcherException('{} is not an instance of '
-                                   'rightshift.matchers.Matcher'.format(matcher))
-        self.matcher = matcher
-
-    def __call__(self, value, **flags):
-        """
-        TODO: Document
-        """
-        return not self.matcher(value, **flags)
-
-is_not = IsNot
