@@ -3,12 +3,38 @@ from copy import copy
 __author__ = 'adam.jorgensen.za@gmail.com'
 
 
-class TransformationException(BaseException):
+class RightShiftException(BaseException):
+    """
+    The base class for all exceptions thrown by code in the rightshift library
+    """
+    pass
+
+
+class TransformationException(RightShiftException):
     """
     An exception that is raised when a Transform is unable to transform a value
     to another value.
     """
     pass
+
+
+class ChainTransformer(object):
+    """
+    The ChainTransformer class is handled specially by the implementation of the
+    right shift >> operation in the Transformer class.
+
+    Performing a >> against a ChainTransformer instance causes that instance to
+    be called immediately with the left-hand side of the expression. The result
+    of this call is used as the return value for the >> operation.
+
+    Overriding this class and implementing the __call__ method allows for the >>
+    operator to return a custom Chain sub-class instance rather than an instance
+    of the standard Chain class.
+    """
+    def __call__(self, left):
+        """
+        """
+        raise NotImplementedError
 
 
 class Transformer(object):
@@ -46,13 +72,11 @@ class Transformer(object):
         :param other:
         :return:
         """
+        if isinstance(other, ChainTransformer):
+            return other(self)
+
         if not isinstance(other, Transformer):
             other = Value(other)
-
-        if isinstance(other, Flags):
-            return FlagsChain(other.flags, self)
-        if isinstance(other, Default):
-            return DefaultChain(other.default, self)
 
         return Chain(self, other)
 
@@ -156,7 +180,7 @@ class FlagsChain(Chain):
         return self.left(value, **use_flags)
 
 
-class Flags(Transformer):
+class Flags(ChainTransformer):
     """
     Flags are a special Transform that allows for data to be passed down to
     Transform chain in order to signal Transforms to modify their behaviour.
@@ -171,6 +195,9 @@ class Flags(Transformer):
         TODO: Document
         """
         self.flags = flags
+
+    def __call__(self, left):
+        return FlagsChain(self.flags, left)
 
 flags = Flags
 """
@@ -203,7 +230,7 @@ class DefaultChain(Chain):
             return self.default
 
 
-class Default(Transformer):
+class Default(ChainTransformer):
     """
     TODO: Document
     """
@@ -212,6 +239,9 @@ class Default(Transformer):
         TODO: Document
         """
         self.default = default
+
+    def __call__(self, left):
+        return DefaultChain(self.default, left)
 
 default = Default
 """
