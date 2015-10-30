@@ -6,47 +6,71 @@ __author__ = 'adam.jorgensen.za@gmail.com'
 
 class MatcherException(RightShiftException):
     """
-    TODO: Document
+    MatcherException is a base class for all exceptions that may be thrown
+    by Matcher instances due either instantiation or matching.
     """
     pass
 
 
 class Matcher(Transformer):
     """
-    TODO: Document
+    Matcher is the base class for all matcher-type transformers. The primary
+    function of this class is to extend the __or__ and __and__ methods on
+    Transformer in order to enable boolean logic when using the | or &
+    with operands which are both sub-classes of the Matcher base class.
     """
     def __or__(self, other):
         """
-        TODO: Document
+        When a Matcher instance applies the | operation to another Matcher
+        instance the standard Transformer behaviour is overridden.
+
+        A Should instance encapsulating both self and other will be
+        returned. If other is an instance of Should then the matchers
+        encapsulated within other will be flattened into the new Should
+        instance.
         """
         if isinstance(other, Matcher):
-            transformers = [self]
+            matchers = [self]
             if isinstance(other, Should):
-                transformers.extend(copy(other.matchers))
+                matchers.extend(copy(other.matchers))
             else:
-                transformers.append(other)
-            return Should(*transformers)
+                matchers.append(other)
+            return Should(*matchers)
 
         return super(Matcher, self).__or__(other)
 
     def __and__(self, other):
         """
-        TODO: Document
+        When a Matcher instance applies the & operation to another Matcher
+        instance the standard Transformer behaviour is overridden.
+
+        A Must instance encapsulating both self and other will be returned. If
+        other is an instance of Must then the matchers encapsulated within other
+        will be flattened into the new Must instance.
         """
         if isinstance(other, Matcher):
-            transformers = [self]
+            matchers = [self]
             if isinstance(other, Must):
-                transformers.extend(copy(other.matchers))
+                matchers.extend(copy(other.matchers))
             else:
-                transformers.append(other)
-            return Must(*transformers)
+                matchers.append(other)
+            return Must(*matchers)
 
         return super(Matcher, self).__and__(other)
 
 
 class Must(Matcher):
     """
-    TODO: Document
+    The Must matcher expects to be initialised with 1 or more Matcher instances.
+
+    When called with a value, the Must matcher returns either True or False.
+
+    True indicates the value matches all Matcher instances the Must was
+    initialised with.
+
+    False indicates the value failed to match at least one of the Matcher
+    instances that the Must was initialised with. When processing a value,
+    False is returned as soon as a failure is detected.
     """
     def __init__(self, *matchers):
         """
@@ -78,7 +102,16 @@ must is an alias to the Must class in righshift.matchers.
 
 class Should(Matcher):
     """
-    TODO: Document
+    The Should matcher expects to be initialised with 1 or more Matcher instances.
+
+    When called with a value, the Should matcher returns either True or False.
+
+    True indicates the value matches one of the Matcher instances the Should was
+    initialised with.  When processing a value, True is returned as soon as a
+    success is detected.
+
+    False indicates the value failed to match any of the Matcher instances that
+    the Should was initialised with.
     """
     def __init__(self, *matchers):
         """
@@ -110,7 +143,16 @@ should is an alias to the Should class in rightshift.matchers.
 
 class MustNot(Matcher):
     """
-    TODO: Document
+    The MustNot matcher expects to be initialised with 1 or more Matcher instances.
+
+    When called with a value, the MustNot matcher returns either True or False.
+
+    True indicates the value matches none of the Matcher instances the MustNot
+    was initialised with.
+
+    False indicates the value matched one of the Matcher instances that the
+    MustNot was initialised with. When processing a value, False is returned as
+    soon as a success is detected.
     """
     def __init__(self, *matchers):
         """
@@ -142,7 +184,6 @@ class IsInstance(Matcher):
     An IsInstance matcher is very simple. When called with a value it will indicate
     whether the value is an instance of the type the matcher was instantiated
     with.
-
     """
     def __init__(self, type):
         """
@@ -164,80 +205,87 @@ is_instance is a an alias to the IsInstance class within this module.
 
 class Comparison(Matcher):
     """
-    TODO: Document
+    Base Matcher class for comparison Matchers.
+
+    Sub-classes of this should implement the __call__ method. The included
+    sub-classes of Comparison do not perform any kind of type check when
+    performing a comparison in order to enable comparison operator overloading
+    on the operand values to function.
     """
     def __init__(self, value):
         """
         TODO: Document
         """
         self.value = value
-        self.type = type(value)
+
+    def __call__(self, value, **flags):
+        raise NotImplementedError
 
 
 class LessThan(Comparison):
     """
-    TODO: Document
+    A Less Than comparison.
     """
     def __call__(self, value, **flags):
         """
         TODO: Document
         """
-        return isinstance(value, self.type) and value < self.value
+        return value < self.value
 
 
 class LessThanEqualTo(Comparison):
     """
-    TODO: Document
+    A Less than or equal to comparison.
     """
     def __call__(self, value, **flags):
         """
         TODO: Document
         """
-        return isinstance(value, self.type) and value <= self.value
+        return value <= self.value
 
 
 class EqualTo(Comparison):
     """
-    TODO: Document
+    An equal to comparison.
     """
     def __call__(self, value, **flags):
         """
         TODO: Document
         """
-        return isinstance(value, self.type) and value == self.value
+        return value == self.value
 
 
 class NotEqualTo(Comparison):
     """
-    TODO: Document
+    A not equal to comparison.
     """
     def __call__(self, value, **flags):
         """
         TODO: Document
         """
-        return isinstance(value, self.type) and value != self.value
+        return value != self.value
 
 
 class GreaterThanEqualTo(Comparison):
     """
-    TODO: Document
+    A greater than or equal to comparison.
     """
     def __call__(self, value, **flags):
         """
         TODO: Document
         """
-        return isinstance(value, self.type) and value >= self.value
+        return value >= self.value
 
 
 class GreaterThan(Comparison):
     """
-    TODO: Document
+    A greater than comparison.
     """
     def __call__(self, value, **flags):
         """
         TODO: Document
         """
-        return isinstance(value, self.type) and value > self.value
+        return value > self.value
 
 
 class __ValueIs(object):
@@ -282,5 +330,16 @@ class __ValueIs(object):
 
 value_is = __ValueIs()
 """
-TODO: Document
+value_is is a special shortcut to enable working with the Comparison sub-classes
+LessThan, LessThanEqualTo, EqualTo, NotEqualTo, GreaterThanEqualTo or GreaterThan
+classes to feel more natural.
+
+value is an instance of the private __ValueIs() class. This classes implements
+the various comparison operator methods and in order to return instances of the
+Comparison sub-classes.
+
+Examples:
+
+value_is >= 5 is equivalent to GreaterThanEqualTo(5)
+value_is != True is equivalent to NotEqualTo(True)
 """
