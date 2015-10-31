@@ -1,5 +1,6 @@
-from rightshift import Transformer, TransformationException, Chain
 from future.utils import raise_from
+
+from rightshift import Transformer, TransformationException, Chain
 
 __author__ = 'adam.jorgensen.za@gmail.com'
 
