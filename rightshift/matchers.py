@@ -38,7 +38,7 @@ class Matcher(Transformer):
                 matchers.extend(copy(other.matchers))
             else:
                 matchers.append(other)
-            return Should(*matchers)
+            return Should(matchers)
 
         return super(Matcher, self).__or__(other)
 
@@ -57,7 +57,7 @@ class Matcher(Transformer):
                 matchers.extend(copy(other.matchers))
             else:
                 matchers.append(other)
-            return Must(*matchers)
+            return Must(matchers)
 
         return super(Matcher, self).__and__(other)
 
@@ -75,17 +75,10 @@ class Must(Matcher):
     instances that the Must was initialised with. When processing a value,
     False is returned as soon as a failure is detected.
     """
-    def __init__(self, *matchers):
+    def __init__(self, matchers):
         """
         TODO: Document
         """
-        if not matchers:
-            raise MatcherException('At least one instance of rightshift.matchers'
-                                   '.Matcher must be supplied to Must.__init__')
-        for matcher in matchers:
-            if not isinstance(matcher, Matcher):
-                raise MatcherException('{} is not an instance of '
-                                       'rightshift.matchers.Matcher'.format(matcher))
         self.matchers = matchers
 
     def __call__(self, value, **flags):
@@ -97,10 +90,22 @@ class Must(Matcher):
                 return False
         return True
 
-must = Must
-"""
-must is an alias to the Must class in righshift.matchers.
-"""
+
+def must(*matchers):
+    """
+    must is a short-cut function for working with the Must class.
+    Whereas the Must class constructor expects a single argument which
+    is an iterable, this function accepts an arbitrary arguments list which
+    is used to construct the Must instance.
+
+    :param matchers:
+    :return: A Must instance
+    :rtype: Must
+    """
+    if not matchers:
+        raise MatcherException('At least argument must be supplied to '
+                               'rightshift.matchers.must')
+    return Must(*matchers)
 
 
 class Should(Matcher):
@@ -116,17 +121,10 @@ class Should(Matcher):
     False indicates the value failed to match any of the Matcher instances that
     the Should was initialised with.
     """
-    def __init__(self, *matchers):
+    def __init__(self, matchers):
         """
         TODO: Document
         """
-        if not matchers:
-            raise MatcherException('At least one instance of rightshift.matchers'
-                                   '.Matcher must be supplied to Should.__init__')
-        for matcher in matchers:
-            if not isinstance(matcher, Matcher):
-                raise MatcherException('{} is not an instance of '
-                                       'rightshift.matchers.Matcher'.format(matcher))
         self.matchers = matchers
 
     def __call__(self, value, **flags):
@@ -138,10 +136,22 @@ class Should(Matcher):
                 return True
         return False
 
-should = Should
-"""
-should is an alias to the Should class in rightshift.matchers.
-"""
+
+def should(*matchers):
+    """
+    should is a short-cut function for working with the Should class.
+    Whereas the Should class constructor expects a single argument which
+    is an iterable, this function accepts an arbitrary arguments list which
+    is used to construct the Should instance.
+
+    :param matchers:
+    :return: A Should instance
+    :rtype: Should
+    """
+    if not matchers:
+        raise MatcherException('At least argument should be supplied to '
+                               'rightshift.matchers.should')
+    return Should(*matchers)
 
 
 class MustNot(Matcher):
@@ -157,17 +167,10 @@ class MustNot(Matcher):
     MustNot was initialised with. When processing a value, False is returned as
     soon as a success is detected.
     """
-    def __init__(self, *matchers):
+    def __init__(self, matchers):
         """
         TODO: Document
         """
-        if not matchers:
-            raise MatcherException('At least one instance of rightshift.matchers'
-                                   '.Matcher must be supplied to MustNot.__init__')
-        for matcher in matchers:
-            if not isinstance(matcher, Matcher):
-                raise MatcherException('{} is not an instance of '
-                                       'rightshift.matchers.Matcher'.format(matcher))
         self.matchers = matchers
 
     def __call__(self, value, **flags):
@@ -179,7 +182,22 @@ class MustNot(Matcher):
                 return False
         return True
 
-must_not = MustNot
+
+def must_not(*matchers):
+    """
+    must_not is a short-cut function for working with the MustNot class.
+    Whereas the MustNot class constructor expects a single argument which
+    is an iterable, this function accepts an arbitrary arguments list which
+    is used to construct the MustNot instance.
+
+    :param matchers:
+    :return: A MustNot instance
+    :rtype: MustNot
+    """
+    if not matchers:
+        raise MatcherException('At least argument must_not be supplied to '
+                               'rightshift.matchers.must_not')
+    return MustNot(*matchers)
 
 
 class IsInstance(Matcher):
