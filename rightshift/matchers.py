@@ -428,3 +428,26 @@ Examples:
 value_is >= 5 is equivalent to GreaterThanEqualTo(5)
 value_is != True is equivalent to NotEqualTo(True)
 """
+
+
+class Between(Comparison):
+    """
+    A between comparison
+    """
+    def __init__(self, lower_bound, upper_bound, falsey_exceptions=False):
+        """
+        :param lower_bound: Exclusive lower boundary of the between comparison.
+        :param upper_bound: Exclusive upper boundary of the between comparison.
+        :param falsey_exceptions: Defaults to False.
+        """
+        super(Between, self).__init__(self.__compare, falsey_exceptions)
+        self.lower_bound = lower_bound
+        self.upper_bound = upper_bound
+
+    def __compare(self, value, **flags):
+        return self.lower_bound < value < self.upper_bound
+
+btw = between = Between
+"""
+An alias to the Between class.
+"""
