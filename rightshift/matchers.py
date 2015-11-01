@@ -1,5 +1,6 @@
 from copy import copy
 from future.utils import raise_from
+import re
 
 from rightshift import Transformer, RightShiftException
 
@@ -450,4 +451,26 @@ class Between(Comparison):
 btw = between = Between
 """
 An alias to the Between class.
+"""
+
+
+class Pattern(Comparison):
+    """
+    A regex search/match. By default, search is used rather than match.
+    """
+    def __init__(self, pattern, search=True, falsey_exceptions=False):
+        super(Pattern, self).__init__(self.__compare, falsey_exceptions)
+        from past.builtins import basestring
+        if isinstance(pattern, basestring):
+            pattern = re.compile(pattern)
+        self.pattern = pattern
+        self.search = search
+
+    def __compare(self, value, **flags):
+        method = self.pattern.search if flags.get('pattern__search', self.search) else self.pattern.match
+        return method(value)
+
+matches_regex = Pattern
+"""
+An alias to the Pattern class.
 """
