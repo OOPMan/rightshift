@@ -1,4 +1,5 @@
 from copy import copy
+from future.utils import raise_from
 
 __author__ = 'adam.jorgensen.za@gmail.com'
 
@@ -355,4 +356,26 @@ class Identity(Transformer):
 identity = Identity()
 """
 TODO: Document
+"""
+
+
+class Wrap(Transformer):
+    """
+    Wrap allows you to easily re-use an existing callable object in the context
+    of a RightShift chain.
+    """
+    def __init__(self, callable_object):
+        if not callable(callable_object):
+            raise TransformationException('{} is not callable'.format(callable_object))
+        self.callable_object = callable_object
+
+    def __call__(self, value, **flags):
+        try:
+            return self.callable_object(value)
+        except Exception as e:
+            raise_from(TransformationException, e)
+
+wrap = Wrap
+"""
+wrap is an alias for the Wrap transform.
 """
