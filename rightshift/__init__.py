@@ -144,7 +144,29 @@ class Chain(Transformer):
     When two Transforms are chained together using the >> operator the output
     of the >> operator is a new Transform that can be called in order to return
     the result of calling the right operand with the result of calling the left
-    operand. I.e. (a >> b)(x) is synonymous with b(a(x))
+    operand.
+
+    Examples:
+
+    f = a >> b
+    z = f(x)
+
+    is synonymous with
+
+    z = b(a(x))
+
+    Additionally, Chain instances provide an implementation of the << operator.
+    Using the << operator allows one to produce a new chain with the right-hand
+    operand inserted between the left and right sides of the current chain.
+
+    Examples:
+
+    f = a >> b
+    f = f << c
+
+    is equivalent to
+
+    f = a >> b << c
     """
     def __init__(self, left, right):
         """
@@ -158,6 +180,12 @@ class Chain(Transformer):
         TODO: Document
         """
         return self.right(self.left(value, **flags), **flags)
+
+    def __lshift__(self, other):
+        """
+        TODO: Document
+        """
+        return self.left >> other >> self.right
 
 
 class Detupling(Transformer):

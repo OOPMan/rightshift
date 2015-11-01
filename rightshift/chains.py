@@ -23,6 +23,9 @@ class FlagsChain(Chain):
         use_flags.update(flags)
         return self.left(value, **use_flags)
 
+    def __lshift__(self, other):
+        return self.left >> other >> Flags(**self.flags)
+
 
 class Flags(ChainTransformer):
     """
@@ -72,6 +75,9 @@ class DefaultChain(Chain):
             return self.left(value, **flags)
         except TransformationException:
             return self.default
+
+    def __lshift__(self, other):
+        return self.left >> other >> Default(self.default)
 
 
 class Default(ChainTransformer):
