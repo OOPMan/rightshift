@@ -246,13 +246,14 @@ attr.x.y is equivalent to Item('x').y
 class PatternGroup(Extractor):
     """
     A PatternGroup can be called with a string in order to attempt to extract a
-    new string from that
+    new string from that string using a regular expression.
     """
     def __init__(self, pattern, group=1, search=True):
         """
         :param pattern: A string or compiled Regular Expression pattern
         :param group: A string or numeric group value
-        :param search: A boolean value indicating whether the search or match method should be used
+        :param search: A boolean value indicating whether the search or match
+                       method should be used
         """
         from past.builtins import basestring
         if isinstance(pattern, basestring):
@@ -276,4 +277,32 @@ pattern_group = PatternGroup
 """
 TODO: Document
 """
+
+
+class CoerceTo(Extractor):
+    """
+    A CoerceTo instance will attempt to transform the type of an input value.
+    """
+    def __init__(self, type, coercer=None):
+        if type is None and coercer is None:
+            coercer = lambda v: None
+        if coercer is None:
+            coercer = type
+        self.type = type
+        self.coercer = coercer
+
+    def __call__(self, value, **flags):
+        try:
+            value = self.coercer(value)
+            if not isinstance(value, self.type):
+                raise ExtractorException('Unable to coerce {} to {}'.format(
+                    value, self.type))
+        except ExtractorException:
+            raise
+        except Exception as e:
+            raise_from(ExtractorException, e)
+        return value
+
+coerce_to = CoerceTo
+
 
