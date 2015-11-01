@@ -101,7 +101,7 @@ class Transformer(object):
             transformers.extend(copy(other.transformers))
         else:
             transformers.append(other)
-        return Detupling(*transformers)
+        return Detupling(transformers)
 
     def __ror__(self, other):
         """
@@ -124,7 +124,7 @@ class Transformer(object):
             transformers.extend(copy(other.transformers))
         else:
             transformers.append(other)
-        return Tupling(False, *transformers)
+        return Tupling(transformers)
 
     def __rand__(self, other):
         """
@@ -192,7 +192,7 @@ class Detupling(Transformer):
     """
     TODO: Document
     """
-    def __init__(self, *transformers):
+    def __init__(self, transformers):
         """
         TODO: Document
 
@@ -222,20 +222,32 @@ class Detupling(Transformer):
                 transformers.extend(other.transformers)
             else:
                 transformers.append(other)
-            return Detupling(*transformers)
+            return Detupling(transformers)
         return super(Detupling, self).__or__(other)
 
-detupling = Detupling
-"""
-TODO: Document
-"""
+
+def detupling(*transformers):
+    """
+    detupling is a short-cut function for working with the Detupling class.
+    Whereas the Detupling class constructor expects a single argument which
+    is an iterable, this function accepts an arbitrary arguments list which
+    is used to construct the Detupling instance.
+
+    :param transformers:
+    :return: A Detupling instance
+    :rtype: Detupling
+    """
+    if not transformers:
+        raise TransformationException('At least argument must be supplied to '
+                                      'rightshift.detupling')
+    return Detupling(transformers)
 
 
 class Tupling(Transformer):
     """
     TODO: Document
     """
-    def __init__(self, generator=False, *transformers):
+    def __init__(self, transformers, generator=False):
         """
         TODO: Document
         """
@@ -267,30 +279,43 @@ class Tupling(Transformer):
                 transformers.extend(other.transformers)
             else:
                 transformers.append(other)
-            return Tupling(False, *transformers)
+            return Tupling(transformers, self.generator)
         return super(Tupling, self).__and__(other)
 
 
 def tupling(*transformers):
     """
-    TODO: Document
+    tupling is a short-cut function for working with the Tupling class.
+    Whereas the Tupling class constructor expects its first argument to
+    be an iterable, this function accepts an arbitrary arguments list which
+    is used to construct the Tupling instance.
 
     :param transformers:
     :return:
     :rtype: Tupling
     """
-    return Tupling(False, *transformers)
+    if not transformers:
+        raise TransformationException('At least argument must be supplied to '
+                                      'rightshift.tupling')
+    return Tupling(transformers)
 
 
 def lazy_tupling(*transformers):
     """
-    TODO: Document
+    tupling is a short-cut function for working with the Tupling class.
+    Whereas the Tupling class constructor expects its first argument to
+    be an iterable, this function accepts an arbitrary arguments list which
+    is used to construct the Tupling instance. Additionally, this function
+    instructs the Tupling instance to use generator logic by default.
 
     :param transformers:
     :return:
     :rtype: Tupling
     """
-    return Tupling(True, *transformers)
+    if not transformers:
+        raise TransformationException('At least argument must be supplied to '
+                                      'rightshift.lazy_tupling')
+    return Tupling(transformers, True)
 
 
 class Value(Transformer):
