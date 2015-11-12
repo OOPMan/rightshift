@@ -40,8 +40,30 @@ class BreakIf(Breaker):
             raise BreakerException
         return value
 
-
 break_if = BreakIf
 """
 break_if is an alias to the BreakIf class.
 """
+
+
+class BreakIfNot(BreakIf):
+    """
+    An inverted version of the BreakIf breaker.
+    """
+
+    def __call__(self, value, **flags):
+        """
+
+        :param value:
+        :param flags:
+        :return:
+        """
+        if not self.matcher(value, **flags):
+            raise BreakerException
+        return value
+
+break_if_not = BreakIfNot
+"""
+break_if_not is an alias to the BreakIfNot class.
+"""
+
