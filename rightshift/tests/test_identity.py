@@ -9,88 +9,92 @@ from cmath import isnan as isnanj
 from rightshift import identity
 
 
-@given(none())
-def test_identity_with_none(data):
+def __common_identity_tests(data):
+    """
+    Generally the operations performed with identity should be simple enough
+    that they behave the same regardless of the input (Barring some minor
+    exceptions like NaN). As a result, all of the assertions used to test
+    the identity transform are performed in this common function.
+
+    :param data:
+    :return:
+    """
     assert identity(data) == data
     assert (identity >> identity)(data) == data
+    assert (identity & identity)(data) == [data, data]
+    assert (identity | identity)(data) == data
+    assert (identity & identity | identity)(data) == [data, data]
+    assert (identity | identity & identity)(data) == data
+
+
+@given(none())
+def test_identity_with_none(data):
+    __common_identity_tests(data)
 
 
 @given(text())
 def test_identity_with_text(data):
-    assert identity(data) == data
-    assert (identity >> identity)(data) == data
+    __common_identity_tests(data)
 
 
 @given(integers())
 def test_identity_with_integers(data):
-    assert identity(data) == data
-    assert (identity >> identity)(data) == data
+    __common_identity_tests(data)
 
 
 @given(floats())
 def test_identity_with_floats(data):
     assume(not isnan(data))
-    assert identity(data) == data
-    assert (identity >> identity)(data) == data
+    __common_identity_tests(data)
 
 
 @given(complex_numbers())
 def test_identity_with_complex_numbers(data):
     assume(not isnanj(data))
-    assert identity(data) == data
-    assert (identity >> identity)(data) == data
+    __common_identity_tests(data)
 
 
 @given(booleans())
 def test_identity_with_booleans(data):
-    assert identity(data) == data
-    assert (identity >> identity)(data) == data
+    __common_identity_tests(data)
 
 
 @given(binary())
 def test_identity_with_binary(data):
-    assert identity(data) == data
-    assert (identity >> identity)(data) == data
+    __common_identity_tests(data)
 
 
 @given(decimals())
 def test_identity_with_decimals(data):
     assume(not isnan(data))
-    assert identity(data) == data
-    assert (identity >> identity)(data) == data
+    __common_identity_tests(data)
 
 
 @given(fractions())
 def test_identity_with_fractions(data):
-    assert identity(data) == data
-    assert (identity >> identity)(data) == data
+    __common_identity_tests(data)
 
 
 @given(lists(integers()))
 def test_identity_with_lists_of_integers(data):
-    assert identity(data) == data
-    assert (identity >> identity)(data) == data
+    __common_identity_tests(data)
 
 
 @given(sets(integers()))
 def test_identity_with_sets_of_integers(data):
-    assert identity(data) == data
-    assert (identity >> identity)(data) == data
+    __common_identity_tests(data)
 
 
 @given(frozensets(integers()))
 def test_identity_with_frozensets_of_integers(data):
-    assert identity(data) == data
-    assert (identity >> identity)(data) == data
+    __common_identity_tests(data)
 
 
 @given(tuples(text(), integers(), floats()))
 def test_identity_with_sets_of_tuples(data):
-    assert identity(data) == data
-    assert (identity >> identity)(data) == data
+    __common_identity_tests(data)
 
 
 @given(dictionaries(one_of(text(), integers()), one_of(integers(), text())))
 def test_identity_with_dictionaries(data):
-    assert identity(data) == data
-    assert (identity >> identity)(data) == data
+    __common_identity_tests(data)
