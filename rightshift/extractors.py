@@ -238,8 +238,8 @@ to generate natural looking attr extraction expressions.
 
 Examples:
 
-attr.x is equivalent to Item('x')
-attr.x.y is equivalent to Item('x').y
+attr.x is equivalent to Attribute('x')
+attr.x.y is equivalent to Attribute('x').y
 """
 
 
