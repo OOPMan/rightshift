@@ -20,5 +20,5 @@ setup(
     ],
     install_requires=['future'],
     test_suite='nose.collector',
-    tests_require=['nose', 'hypothesis'],
+    tests_require=['nose', 'hypothesis', 'future'],
 )
