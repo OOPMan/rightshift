@@ -1,18 +1,23 @@
 from math import isnan
-
-from rightshift.extractors import item, attr, pattern_group
 from hypothesis import given, assume
 from hypothesis.strategies import text, integers, floats, lists, booleans
 from hypothesis.strategies import dictionaries, one_of
 from random import randint, choice
+from past.builtins import basestring
+from string import letters, digits
+
+from rightshift.extractors import item, attr, pattern_group
 
 
-def __common_item_tests(data):
+def __common_item_tests(data, index=None):
     assume(len(data) > 0)
-    index = randint(0, len(data) - 1)
+    if index is None:
+        index = randint(0, len(data) - 1)
     if isinstance(data[index], float):
         assume(not isnan(data[index]))
     assert item[index](data) == data[index]
+    if isinstance(index, basestring):
+        assert getattr(item, index)(data) == data[index]
 
 
 @given(text())
@@ -25,13 +30,11 @@ def test_item_with_lists(data):
     __common_item_tests(data)
 
 
-@given(dictionaries(keys=text(), values=one_of(text(), integers(), floats(),
-                                               booleans())))
+@given(dictionaries(keys=text(alphabet=letters + digits),
+                    values=one_of(text(), integers(), floats(), booleans()),
+                    min_size=1))
 def test_item_with_dictionaries(data):
-    assume(len(data) > 0)
     key = choice(data.keys())
-    if isinstance(data[key], float):
-        assume(not isnan(data[key]))
-    assert item[key](data) == data[key]
+    __common_item_tests(data, key)
 
 
