@@ -38,3 +38,9 @@ def test_item_with_dictionaries(data):
     __common_item_tests(data, key)
 
 
+@given(text())
+def test_attr_with_text(data):
+    assert attr.lower(data)() == data.lower()
+
+
+
