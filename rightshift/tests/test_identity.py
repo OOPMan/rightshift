@@ -4,7 +4,7 @@ from hypothesis.strategies import booleans, tuples, lists, sets, frozensets
 from hypothesis.strategies import dictionaries, binary, fractions, decimals
 from hypothesis.strategies import one_of
 from math import isnan
-from cmath import isnan as isnanj
+from cmath import isnan as iscnan
 
 from rightshift import identity
 
@@ -50,7 +50,7 @@ def test_identity_with_floats(data):
 
 @given(complex_numbers())
 def test_identity_with_complex_numbers(data):
-    assume(not isnanj(data))
+    assume(not iscnan(data))
     __common_identity_tests(data)
 
 
