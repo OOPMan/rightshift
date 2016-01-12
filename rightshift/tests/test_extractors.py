@@ -6,6 +6,7 @@ from random import randint, choice
 from past.builtins import basestring
 from string import letters, digits
 
+from rightshift.chains import default
 from rightshift.extractors import item, attr, pattern_group
 
 
@@ -43,4 +44,17 @@ def test_attr_with_text(data):
     assert attr.lower(data)() == data.lower()
 
 
+@given(text(min_size=1), text(min_size=1))
+def test_pattern_group_with_text(prefix, postfix):
+    constant = 'a constant string'
+    another_constant = 'not the constant you expected'
+    variants = [
+        constant,
+        prefix + constant,
+        constant + postfix,
+        prefix + constant + postfix
+    ]
+    for variant in variants:
+        assert pattern_group(constant, group=0)(variant) == constant
+        assert (pattern_group(another_constant, group=0) >> default(constant))(variant) == constant
 
