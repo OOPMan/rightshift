@@ -4,7 +4,7 @@ from future.utils import raise_from
 __author__ = 'adam.jorgensen.za@gmail.com'
 
 
-class RightShiftException(BaseException):
+class RightShiftException(Exception):
     """
     The base class for all exceptions thrown by code in the rightshift library
     """
