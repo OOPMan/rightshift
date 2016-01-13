@@ -55,6 +55,6 @@ def test_pattern_group_with_text(prefix, postfix):
         prefix + constant + postfix
     ]
     for variant in variants:
-        assert pattern_group(constant, group=0)(variant) == constant
-        assert (pattern_group(another_constant, group=0) >> default(constant))(variant) == constant
+        assert pattern_group(constant)(variant) == constant
+        assert (pattern_group(another_constant) >> default(constant))(variant) == constant
 
