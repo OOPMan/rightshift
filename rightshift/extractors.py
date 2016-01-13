@@ -57,7 +57,7 @@ class Item(Extractor):
         try:
             return value[self.item_or_slice]
         except Exception as e:
-            raise_from(ExtractorException, e)
+            raise_from(ExtractorException(e.message), e)
 
     def __getattr__(self, item_name):
         """
@@ -248,7 +248,7 @@ class PatternGroup(Extractor):
     A PatternGroup can be called with a string in order to attempt to extract a
     new string from that string using a regular expression.
     """
-    def __init__(self, pattern, group=1, search=True):
+    def __init__(self, pattern, group=0, search=True):
         """
         :param pattern: A string or compiled Regular Expression pattern
         :param group: A string or numeric group value
@@ -271,7 +271,7 @@ class PatternGroup(Extractor):
                 raise ExtractorException
             return match.group(flags.get('pattern_group__group', self.group))
         except Exception as e:
-            raise_from(ExtractorException, e)
+            raise_from(ExtractorException(e), e)
 
 pattern_group = PatternGroup
 """
@@ -300,7 +300,7 @@ class CoerceTo(Extractor):
         except ExtractorException:
             raise
         except Exception as e:
-            raise_from(ExtractorException, e)
+            raise_from(ExtractorException(e.message), e)
         return value
 
 coerce_to = CoerceTo

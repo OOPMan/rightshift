@@ -373,7 +373,7 @@ class Wrap(Transformer):
         try:
             return self.callable_object(value)
         except Exception as e:
-            raise_from(TransformationException, e)
+            raise_from(TransformationException(e.message), e)
 
 wrap = Wrap
 """

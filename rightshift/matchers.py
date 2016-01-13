@@ -259,7 +259,7 @@ class Comparison(Matcher):
         except Exception as e:
             if flags.get('comparison__falsey_exceptions', self.falsey_exceptions):
                 return False
-            raise_from(MatcherException, e)
+            raise_from(MatcherException(e.message), e)
         raise NotImplementedError
 
 compare_using = comparison = Comparison
