@@ -7,7 +7,7 @@ from past.builtins import basestring
 from string import letters, digits
 
 from rightshift.chains import default
-from rightshift.extractors import item, attr, pattern_group
+from rightshift.extractors import item, attr, pattern_group, coerce_to
 
 
 def __common_item_tests(data, index=None):
@@ -58,3 +58,12 @@ def test_pattern_group_with_text(prefix, postfix):
         assert pattern_group(constant)(variant) == constant
         assert (pattern_group(another_constant) >> default(constant))(variant) == constant
 
+
+@given(text())
+def test_coerce_to_with_text(data):
+    assert coerce_to(bool)(data) == bool(data)
+
+
+@given(booleans())
+def test_coerce_to_with_booleans(data):
+    assert coerce_to(unicode)(data) == unicode(data)
