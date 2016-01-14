@@ -55,6 +55,8 @@ def test_comparisons_with_integers(x):
     def test_between(a, b, c):
         assert a < b < c
         assert between(a, c)(b)
+        assert must(gt(a), lt(c))(b)
+        assert ((value_is > a) & (value_is < c))(b)
 
     test_lt()
     test_lte()
