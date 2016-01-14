@@ -105,7 +105,7 @@ def must(*matchers):
     if not matchers:
         raise MatcherException('At least argument must be supplied to '
                                'rightshift.matchers.must')
-    return Must(*matchers)
+    return Must(matchers)
 
 
 class Should(Matcher):
@@ -151,7 +151,7 @@ def should(*matchers):
     if not matchers:
         raise MatcherException('At least argument should be supplied to '
                                'rightshift.matchers.should')
-    return Should(*matchers)
+    return Should(matchers)
 
 
 class MustNot(Matcher):
@@ -197,7 +197,7 @@ def must_not(*matchers):
     if not matchers:
         raise MatcherException('At least argument must_not be supplied to '
                                'rightshift.matchers.must_not')
-    return MustNot(*matchers)
+    return MustNot(matchers)
 
 
 class IsInstance(Matcher):
