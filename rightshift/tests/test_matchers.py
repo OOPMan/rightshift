@@ -1,7 +1,7 @@
 from hypothesis import given, assume
 from hypothesis.strategies import text, booleans, integers, floats, one_of, just
 
-from rightshift.matchers import must, should, must_not, is_instance, compare_using
+from rightshift.matchers import must, should, must_not, is_instance, comparison
 from rightshift.matchers import lt, lte, eq, ne, gte, gt, value_is, between, matches_regex
 
 
@@ -9,6 +9,19 @@ from rightshift.matchers import lt, lte, eq, ne, gte, gt, value_is, between, mat
 def test_is_instance_with_text_floats_booleans_integers(data):
     data_type = type(data)
     assert is_instance(data_type)(data) == isinstance(data, data_type)
+
+
+@given(text(min_size=1), text(min_size=1))
+def test_matches_regex_with_text(prefix, postfix):
+    constant = 'a constant string'
+    variants = [
+        constant,
+        prefix + constant,
+        constant + postfix,
+        prefix + constant + postfix
+    ]
+    for variant in variants:
+        assert matches_regex(constant)(variant)
 
 
 @given(integers())
