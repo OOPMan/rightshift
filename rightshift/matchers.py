@@ -486,7 +486,7 @@ class Pattern(Comparison):
 
     def __compare(self, value, **flags):
         method = self.pattern.search if flags.get('pattern__search', self.search) else self.pattern.match
-        return method(value)
+        return method(value) is not None
 
 matches_regex = Pattern
 """
