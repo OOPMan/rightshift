@@ -1,5 +1,6 @@
 from hypothesis import given, assume
 from hypothesis.strategies import text, booleans, integers, floats, one_of, just
+from math import isinf, isnan
 
 from rightshift.matchers import must, should, must_not, is_instance, comparison
 from rightshift.matchers import lt, lte, eq, ne, gte, gt, value_is, between, matches_regex
@@ -27,7 +28,7 @@ def test_matches_regex_with_text(prefix, postfix):
 @given(integers())
 def test_comparisons_with_integers(x):
 
-    @given(just(x), integers(max_value=x - 1))
+    @given(just(x), integers(max_value=x-1))
     def test_lt(a, b):
         assert b < a
         assert lt(a)(b)
@@ -79,3 +80,74 @@ def test_comparisons_with_integers(x):
     test_gt()
     test_between()
 
+
+@given(floats(min_value=-1000000, max_value=1000000))
+def test_comparisons_with_floats(x):
+    assume(not isinf(x))
+    assume(not isnan(x))
+
+    @given(just(x), floats(max_value=x-5))
+    def test_lt(a, b):
+        assume(not isinf(b))
+        assume(not isnan(b))
+        assert b < a
+        assert lt(a)(b)
+        assert (value_is < a)(b)
+
+    @given(just(x), floats(max_value=x))
+    def test_lte(a, b):
+        assume(not isinf(b))
+        assume(not isnan(b))
+        assert b <= a
+        assert lte(a)(b)
+        assert (value_is <= a)(b)
+
+    @given(just(x), just(x))
+    def test_eq(a, b):
+        assume(not isinf(b))
+        assume(not isnan(b))
+        assert a == b
+        assert eq(a)(b)
+        assert (value_is == a)(b)
+
+    @given(just(x), floats())
+    def test_ne(a, b):
+        assume(not isinf(b))
+        assume(not isnan(b))
+        assume(a != b)
+        assert a != b
+        assert ne(a)(b)
+        assert (value_is != a)(b)
+
+    @given(just(x), floats(min_value=x))
+    def test_gte(a, b):
+        assume(not isinf(b))
+        assume(not isnan(b))
+        assert b >= a
+        assert gte(a)(b)
+        assert (value_is >= a)(b)
+
+    @given(just(x), floats(min_value=x+5))
+    def test_gt(a, b):
+        assume(not isinf(b))
+        assume(not isnan(b))
+        assert b > a
+        assert gt(a)(b)
+        assert (value_is > a)(b)
+
+    @given(floats(max_value=x-5), just(x), floats(min_value=x+5))
+    def test_between(a, b, c):
+        assume(not isinf(b))
+        assume(not isnan(b))
+        assert a < b < c
+        assert between(a, c)(b)
+        assert must(gt(a), lt(c))(b)
+        assert ((value_is > a) & (value_is < c))(b)
+
+    test_lt()
+    test_lte()
+    test_eq()
+    test_ne()
+    test_gte()
+    test_gt()
+    test_between()
