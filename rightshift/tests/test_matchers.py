@@ -2,8 +2,8 @@ from hypothesis import given, assume
 from hypothesis.strategies import text, booleans, integers, floats, one_of, just
 from math import isinf, isnan
 
-from rightshift.matchers import must, should, must_not, is_instance, comparison
-from rightshift.matchers import lt, lte, eq, ne, gte, gt, value_is, between, matches_regex
+from rightshift.matchers import must, should, must_not, is_instance, matches_regex
+from rightshift.matchers import lt, lte, eq, ne, gte, gt, value_is, between
 
 
 @given(one_of(text(), booleans(), floats(), integers()))
@@ -33,18 +33,21 @@ def test_comparisons_with_integers(x):
         assert b < a
         assert lt(a)(b)
         assert (value_is < a)(b)
+        assert must_not(value_is >= a)(b)
 
     @given(just(x), integers(max_value=x))
     def test_lte(a, b):
         assert b <= a
         assert lte(a)(b)
         assert (value_is <= a)(b)
+        assert must_not(value_is > a)(b)
 
     @given(just(x), just(x))
     def test_eq(a, b):
         assert a == b
         assert eq(a)(b)
         assert (value_is == a)(b)
+        assert (must_not(value_is > a) & must_not(value_is < a))(b)
 
     @given(just(x), integers())
     def test_ne(a, b):
@@ -52,25 +55,32 @@ def test_comparisons_with_integers(x):
         assert a != b
         assert ne(a)(b)
         assert (value_is != a)(b)
+        assert must_not(value_is == a)(b)
 
     @given(just(x), integers(min_value=x))
     def test_gte(a, b):
         assert b >= a
         assert gte(a)(b)
         assert (value_is >= a)(b)
+        assert must_not(value_is < a)(b)
 
     @given(just(x), integers(min_value=x+1))
     def test_gt(a, b):
         assert b > a
         assert gt(a)(b)
         assert (value_is > a)(b)
+        assert must_not(value_is <= a)(b)
 
     @given(integers(max_value=x-1), just(x), integers(min_value=x+1))
     def test_between(a, b, c):
         assert a < b < c
         assert between(a, c)(b)
         assert must(gt(a), lt(c))(b)
+        assert should(lt(a), lt(c))(b)
+        assert should(gt(a), gt(c))(b)
         assert ((value_is > a) & (value_is < c))(b)
+        assert ((value_is < a) | (value_is < c))(b)
+        assert ((value_is > a) | (value_is > c))(b)
 
     test_lt()
     test_lte()
@@ -93,6 +103,7 @@ def test_comparisons_with_floats(x):
         assert b < a
         assert lt(a)(b)
         assert (value_is < a)(b)
+        assert must_not(value_is >= a)(b)
 
     @given(just(x), floats(max_value=x))
     def test_lte(a, b):
@@ -101,6 +112,7 @@ def test_comparisons_with_floats(x):
         assert b <= a
         assert lte(a)(b)
         assert (value_is <= a)(b)
+        assert must_not(value_is > a)(b)
 
     @given(just(x), just(x))
     def test_eq(a, b):
@@ -109,6 +121,7 @@ def test_comparisons_with_floats(x):
         assert a == b
         assert eq(a)(b)
         assert (value_is == a)(b)
+        assert must_not(value_is != a)(b)
 
     @given(just(x), floats())
     def test_ne(a, b):
@@ -118,6 +131,7 @@ def test_comparisons_with_floats(x):
         assert a != b
         assert ne(a)(b)
         assert (value_is != a)(b)
+        assert must_not(value_is == a)(b)
 
     @given(just(x), floats(min_value=x))
     def test_gte(a, b):
@@ -126,6 +140,7 @@ def test_comparisons_with_floats(x):
         assert b >= a
         assert gte(a)(b)
         assert (value_is >= a)(b)
+        assert must_not(value_is < a)(b)
 
     @given(just(x), floats(min_value=x+5))
     def test_gt(a, b):
@@ -134,6 +149,7 @@ def test_comparisons_with_floats(x):
         assert b > a
         assert gt(a)(b)
         assert (value_is > a)(b)
+        assert must_not(value_is <= a)(b)
 
     @given(floats(max_value=x-5), just(x), floats(min_value=x+5))
     def test_between(a, b, c):
@@ -142,7 +158,11 @@ def test_comparisons_with_floats(x):
         assert a < b < c
         assert between(a, c)(b)
         assert must(gt(a), lt(c))(b)
+        assert should(lt(a), lt(c))(b)
+        assert should(gt(a), gt(c))(b)
         assert ((value_is > a) & (value_is < c))(b)
+        assert ((value_is < a) | (value_is < c))(b)
+        assert ((value_is > a) | (value_is > c))(b)
 
     test_lt()
     test_lte()
