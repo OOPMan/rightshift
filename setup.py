@@ -8,7 +8,8 @@ setup(
     license='MIT',
     author='Adam Jorgensen',
     author_email='adam.jorgensen.za@gmail.com',
-    description='RightShift is a Python package for writing chained operations in a readable fashion.',
+    description='RightShift is a Python package for writing chained operations '
+                'in a readable fashion.',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
