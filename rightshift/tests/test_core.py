@@ -6,7 +6,7 @@ from hypothesis.strategies import one_of
 from math import isnan
 from cmath import isnan as iscnan
 
-from rightshift import identity, value
+from rightshift import identity, value, wrap
 
 
 def __common_identity_tests(data):
@@ -184,3 +184,9 @@ def test_value_with_sets_of_tuples(data):
 @given(dictionaries(one_of(text(), integers()), one_of(integers(), text())))
 def test_value_with_dictionaries(data):
     __common_value_tests(data)
+
+
+@given(integers())
+def test_wrap_with_integers(data):
+    assert wrap(lambda i: i * i)(data) == data * data
+    assert (wrap(lambda i: i * i) >> wrap(lambda i: i * i))(data) == data * data * data * data
