@@ -17,18 +17,18 @@ class Breaker(Transformer):
 class BreakIf(Breaker):
     """
     A basic Breaker that causes a BreakerException to be thrown if the value
-    it is called with does not match the Matcher supplied when the BreakIf
-    instance was created.
+    it is called with does not produced a truthy result when applied to the
+    Transformer supplied when the BreakIf instance was created.
     """
-    def __init__(self, matcher):
+    def __init__(self, transformer):
         """
 
-        :param matcher:
+        :param transformer:
         :return:
         """
-        if not isinstance(matcher, Matcher):
-            raise BreakerException('{} is not an instance of {}'.format(matcher, Matcher.__class__))
-        self.matcher = matcher
+        if not isinstance(transformer, Transformer):
+            raise BreakerException('{} is not an instance of {}'.format(transformer, Transformer.__class__))
+        self.transformer = transformer
 
     def __call__(self, value, **flags):
         """
@@ -36,7 +36,7 @@ class BreakIf(Breaker):
         :param flags:
         :return:
         """
-        if self.matcher(value, **flags):
+        if self.transformer(value, **flags):
             raise BreakerException
         return value
 
@@ -58,7 +58,7 @@ class BreakIfNot(BreakIf):
         :param flags:
         :return:
         """
-        if not self.matcher(value, **flags):
+        if not self.transformer(value, **flags):
             raise BreakerException
         return value
 
