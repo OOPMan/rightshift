@@ -5,8 +5,10 @@ import re
 from rightshift import Transformer, RightShiftException
 from rightshift.extractors import Item as _Item
 from rightshift.extractors import ItemChain as _ItemChain
+from rightshift.extractors import _ItemCreator as __ItemCreator
 from rightshift.extractors import Attribute as _Attribute
 from rightshift.extractors import AttributeChain as _AttributeChain
+from rightshift.extractors import _AttributeCreator as __AttributeCreator
 
 __author__ = 'adam.jorgensen.za@gmail.com'
 
@@ -264,7 +266,6 @@ class Comparison(Matcher):
             if flags.get('comparison__falsey_exceptions', self.falsey_exceptions):
                 return False
             raise_from(MatcherException, e)
-        raise NotImplementedError
 
 compare_using = comparison = Comparison
 """
@@ -288,10 +289,10 @@ class MethodComparison(Comparison):
         :param falsey_exceptions:
         :return:
         """
-        super(MethodComparison, self).__init__(self.__compare, falsey_exceptions)
+        super(MethodComparison, self).__init__(self.compare, falsey_exceptions)
         self.value = value
 
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         """
         TODO: Document
 
@@ -306,7 +307,7 @@ class LessThan(MethodComparison):
     """
     A Less Than comparison.
     """
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         """
         TODO: Document
         """
@@ -322,7 +323,7 @@ class LessThanEqualTo(MethodComparison):
     """
     A Less than or equal to comparison.
     """
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         """
         TODO: Document
         """
@@ -338,7 +339,7 @@ class EqualTo(MethodComparison):
     """
     An equal to comparison.
     """
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         """
         TODO: Document
         """
@@ -354,7 +355,7 @@ class NotEqualTo(MethodComparison):
     """
     A not equal to comparison.
     """
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         """
         TODO: Document
         """
@@ -370,7 +371,7 @@ class GreaterThanEqualTo(MethodComparison):
     """
     A greater than or equal to comparison.
     """
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         """
         TODO: Document
         """
@@ -386,7 +387,7 @@ class GreaterThan(MethodComparison):
     """
     A greater than comparison.
     """
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         """
         TODO: Document
         """
@@ -398,53 +399,112 @@ An alias to the GreaterThan class.
 """
 
 
-class __ValueIs(object):
+class Between(MethodComparison):
+    """
+    A between comparison
+    """
+    def __init__(self, lower_bound, upper_bound, falsey_exceptions=False):
+        """
+        :param lower_bound: Exclusive lower boundary of the between comparison.
+        :param upper_bound: Exclusive upper boundary of the between comparison.
+        :param falsey_exceptions: Defaults to False.
+        """
+        super(MethodComparison, self).__init__(self.compare, falsey_exceptions)
+        self.lower_bound = lower_bound
+        self.upper_bound = upper_bound
+
+    def compare(self, value, **flags):
+        return self.lower_bound < value < self.upper_bound
+
+btw = between = Between
+"""
+An alias to the Between class.
+"""
+
+
+class Pattern(MethodComparison):
+    """
+    A regex search/match. By default, search is used rather than match.
+    """
+    def __init__(self, pattern, search=True, falsey_exceptions=False):
+        super(MethodComparison, self).__init__(self.compare, falsey_exceptions)
+        from past.builtins import basestring
+        if isinstance(pattern, basestring):
+            pattern = re.compile(pattern)
+        self.pattern = pattern
+        self.search = search
+
+    def compare(self, value, **flags):
+        method = self.pattern.search if flags.get('pattern__search', self.search) else self.pattern.match
+        return method(value)
+
+matches_regex = Pattern
+"""
+An alias to the Pattern class.
+"""
+
+
+class _ValueIs(object):
     """
     TODO: Document
     """
+    def __init__(self, left=None):
+        self.left = left
+
+    def __call__(self, right, left=None):
+        """
+        TODO: Document
+        :param right:
+        :param left:
+        :return:
+        """
+        if left is None:
+            left = self.left
+        return right if left is None else left >> right
+
     def __lt__(self, other):
         """
         TODO: Document
         """
-        return LessThan(other)
+        return self(LessThan(other))
 
     def __le__(self, other):
         """
         TODO: Document
         """
-        return LessThanEqualTo(other)
+        return self(LessThanEqualTo(other))
 
     def __eq__(self, other):
         """
         TODO: Document
         """
-        return EqualTo(other)
+        return self(EqualTo(other))
 
     def __ne__(self, other):
         """
         TODO: Document
         """
-        return NotEqualTo(other)
+        return self(NotEqualTo(other))
 
     def __ge__(self, other):
         """
         TODO: Document
         """
-        return GreaterThanEqualTo(other)
+        return self(GreaterThanEqualTo(other))
 
     def __gt__(self, other):
         """
         TODO: Document
         """
-        return GreaterThan(other)
+        return self(GreaterThan(other))
 
-value_is = __ValueIs()
+value_is = _ValueIs()
 """
 value_is is a special shortcut to enable working with the Comparison sub-classes
 LessThan, LessThanEqualTo, EqualTo, NotEqualTo, GreaterThanEqualTo or GreaterThan
 classes to feel more natural.
 
-value is an instance of the private __ValueIs() class. This classes implements
+value is an instance of the private _ValueIs() class. This classes implements
 the various comparison operator methods and in order to return instances of the
 Comparison sub-classes.
 
@@ -455,46 +515,111 @@ value_is != True is equivalent to NotEqualTo(True)
 """
 
 
-class Between(Comparison):
+class _ValueIsMixin(object):
     """
-    A between comparison
+    TODO: Document
     """
-    def __init__(self, lower_bound, upper_bound, falsey_exceptions=False):
+
+    @property
+    def value_is(self):
         """
-        :param lower_bound: Exclusive lower boundary of the between comparison.
-        :param upper_bound: Exclusive upper boundary of the between comparison.
-        :param falsey_exceptions: Defaults to False.
+        TODO: Document
+
+        :return:
         """
-        super(Between, self).__init__(self.__compare, falsey_exceptions)
-        self.lower_bound = lower_bound
-        self.upper_bound = upper_bound
-
-    def __compare(self, value, **flags):
-        return self.lower_bound < value < self.upper_bound
-
-btw = between = Between
-"""
-An alias to the Between class.
-"""
+        return _ValueIs(self)
 
 
-class Pattern(Comparison):
+class ItemChain(_ItemChain, _ValueIsMixin):
     """
-    A regex search/match. By default, search is used rather than match.
+    TODO: Document
     """
-    def __init__(self, pattern, search=True, falsey_exceptions=False):
-        super(Pattern, self).__init__(self.__compare, falsey_exceptions)
-        from past.builtins import basestring
-        if isinstance(pattern, basestring):
-            pattern = re.compile(pattern)
-        self.pattern = pattern
-        self.search = search
 
-    def __compare(self, value, **flags):
-        method = self.pattern.search if flags.get('pattern__search', self.search) else self.pattern.match
-        return method(value)
+    def __getitem__(self, item_or_slice):
+        return ItemChain(self, Item(item_or_slice))
 
-matches_regex = Pattern
+
+class Item(_Item, _ValueIsMixin):
+    """
+    TODO: Document
+    """
+    pass
+
+
+class _ItemCreator(__ItemCreator):
+    """
+    TODO: Document
+    """
+
+    def __getitem__(self, item_or_slice):
+        """
+        :param item_or_slice: A valid item name or slice value
+        :return: an Item instance
+        :rtype: Item
+        """
+
+        return Item(item_or_slice)
+
+item = _ItemCreator()
 """
-An alias to the Pattern class.
+item is a special shortcut to enable working with the Item class to
+feel more natural. item is an instance of the private _ItemCreator
+class which mirrors the functionality of the Item class but is not
+actually an instance of Item itself. This allows item to be used to
+generate natural looking item extraction expressions.
+
+Examples:
+
+item['x'] is equivalent to Item('x')
+item['x']['y'] is equivalent to Item('x')['y']
+"""
+
+
+class AttributeChain(_AttributeChain, _ValueIsMixin):
+    """
+    TODO: Document
+    """
+
+    def __getattr__(self, attribute):
+        """
+        :param attribute: A valid attribute name value
+        :return: an AttributeChain instance
+        :rtype: AttributeChain
+        """
+        return AttributeChain(self, Attribute(attribute))
+
+
+class Attribute(_Attribute, _ValueIsMixin):
+    """
+    TODO: Document
+    """
+    pass
+
+
+class _AttributeCreator(__AttributeCreator):
+    """
+    TODO: Document
+    """
+
+    def __getattr__(self, attribute):
+        """
+        :param attribute: A valid attribute name value
+        :return: an AttributeExtractor instance
+        :rtype: Attribute
+        """
+
+        return Attribute(attribute)
+
+attr = prop = _AttributeCreator()
+"""
+attr is a special shortcut to enable working with the Attribute class
+to feel more natural. attr is an instance of the private _AttributeCreator
+class which mirrors the functionality of the Attribute class but is not
+actually an instance of Attribute itself. This allows attr to be used
+to generate natural looking attr extraction expressions.
+
+Examples:
+
+attr.x is equivalent to Item('x')
+attr.x.y is equivalent to Item('x').y
 """
