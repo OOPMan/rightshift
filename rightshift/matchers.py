@@ -3,6 +3,10 @@ from future.utils import raise_from
 import re
 
 from rightshift import Transformer, RightShiftException
+from rightshift.extractors import Item as _Item
+from rightshift.extractors import ItemChain as _ItemChain
+from rightshift.extractors import Attribute as _Attribute
+from rightshift.extractors import AttributeChain as _AttributeChain
 
 __author__ = 'adam.jorgensen.za@gmail.com'
 
@@ -272,14 +276,36 @@ compare_using(lambda v, **flags: v.startswith('x'))
 """
 
 
-class LessThan(Comparison):
+class MethodComparison(Comparison):
+    """
+    TODO: Document
+    """
+    def __init__(self, value, falsey_exceptions=False):
+        """
+        TODO: Document
+
+        :param value:
+        :param falsey_exceptions:
+        :return:
+        """
+        super(MethodComparison, self).__init__(self.__compare, falsey_exceptions)
+        self.value = value
+
+    def __compare(self, value, **flags):
+        """
+        TODO: Document
+
+        :param value:
+        :param flags:
+        :return:
+        """
+        raise NotImplementedError
+
+
+class LessThan(MethodComparison):
     """
     A Less Than comparison.
     """
-    def __init__(self, value, falsey_exceptions=False):
-        super(LessThan, self).__init__(self.__compare, falsey_exceptions)
-        self.value = value
-
     def __compare(self, value, **flags):
         """
         TODO: Document
@@ -292,14 +318,10 @@ An alias to the LessThan class.
 """
 
 
-class LessThanEqualTo(Comparison):
+class LessThanEqualTo(MethodComparison):
     """
     A Less than or equal to comparison.
     """
-    def __init__(self, value, falsey_exceptions=False):
-        super(LessThanEqualTo, self).__init__(self.__compare, falsey_exceptions)
-        self.value = value
-
     def __compare(self, value, **flags):
         """
         TODO: Document
@@ -312,14 +334,10 @@ An alias to the LessThanEqualTo class.
 """
 
 
-class EqualTo(Comparison):
+class EqualTo(MethodComparison):
     """
     An equal to comparison.
     """
-    def __init__(self, value, falsey_exceptions=False):
-        super(EqualTo, self).__init__(self.__compare, falsey_exceptions)
-        self.value = value
-
     def __compare(self, value, **flags):
         """
         TODO: Document
@@ -332,14 +350,10 @@ An alias to the EqualTo class.
 """
 
 
-class NotEqualTo(Comparison):
+class NotEqualTo(MethodComparison):
     """
     A not equal to comparison.
     """
-    def __init__(self, value, falsey_exceptions=False):
-        super(NotEqualTo, self).__init__(self.__compare, falsey_exceptions)
-        self.value = value
-
     def __compare(self, value, **flags):
         """
         TODO: Document
@@ -352,14 +366,10 @@ An alias to the NotEqualTo class.
 """
 
 
-class GreaterThanEqualTo(Comparison):
+class GreaterThanEqualTo(MethodComparison):
     """
     A greater than or equal to comparison.
     """
-    def __init__(self, value, falsey_exceptions=False):
-        super(GreaterThanEqualTo, self).__init__(self.__compare, falsey_exceptions)
-        self.value = value
-
     def __compare(self, value, **flags):
         """
         TODO: Document
@@ -372,14 +382,10 @@ An alias to the GreaterThanEqualTo class.
 """
 
 
-class GreaterThan(Comparison):
+class GreaterThan(MethodComparison):
     """
     A greater than comparison.
     """
-    def __init__(self, value, falsey_exceptions=False):
-        super(GreaterThan, self).__init__(self.__compare, falsey_exceptions)
-        self.value = value
-
     def __compare(self, value, **flags):
         """
         TODO: Document
