@@ -76,7 +76,7 @@ class Item(Extractor):
         return ItemChain(self, Item(item_or_slice))
 
 
-class __ItemCreator(object):
+class _ItemCreator(object):
     """
     The _ItemCreator is a private class that is instantiated once
     and assigned to the `item` variable in the rightshift.extractors module.
@@ -110,10 +110,10 @@ class __ItemCreator(object):
         return Item(item_or_slice)
 
 
-item = __ItemCreator()
+item = _ItemCreator()
 """
 item is a special shortcut to enable working with the Item class to
-feel more natural. item is an instance of the private __ItemCreator
+feel more natural. item is an instance of the private _ItemCreator
 class which mirrors the functionality of the Item class but is not
 actually an instance of Item itself. This allows item to be used to
 generate natural looking item extraction expressions.
@@ -189,7 +189,7 @@ class Attribute(Extractor):
         return AttributeChain(self, Attribute(attribute))
 
 
-class __AttributeCreator(object):
+class _AttributeCreator(object):
     """
     The _AttributeCreator is a private class that is instantiated once
     and assigned to the `attr` variable in the rightshift.extractors module.
@@ -228,10 +228,10 @@ class __AttributeCreator(object):
         """
         raise NotImplementedError
 
-attr = __AttributeCreator()
+attr = prop = _AttributeCreator()
 """
 attr is a special shortcut to enable working with the Attribute class
-to feel more natural. attr is an instance of the private __AttributeCreator
+to feel more natural. attr is an instance of the private _AttributeCreator
 class which mirrors the functionality of the Attribute class but is not
 actually an instance of Attribute itself. This allows attr to be used
 to generate natural looking attr extraction expressions.
