@@ -507,6 +507,7 @@ Examples:
 
 value_is >= 5 is equivalent to GreaterThanEqualTo(5)
 value_is != True is equivalent to NotEqualTo(True)
+value_is >= 5
 """
 
 
@@ -538,35 +539,11 @@ class Item(extractors.Item, _ValueIsMixin):
     """
     TODO: Document
     """
-    pass
 
 
-class _ItemCreator(extractors._ItemCreator):
-    """
-    TODO: Document
-    """
-
-    def __getitem__(self, item_or_slice):
-        """
-        :param item_or_slice: A valid item name or slice value
-        :return: an Item instance
-        :rtype: Item
-        """
-
-        return Item(item_or_slice)
-
-item = _ItemCreator()
+item = Item
 """
-item is a special shortcut to enable working with the Item class to
-feel more natural. item is an instance of the private _ItemCreator
-class which mirrors the functionality of the Item class but is not
-actually an instance of Item itself. This allows item to be used to
-generate natural looking item extraction expressions.
-
-Examples:
-
-item['x'] is equivalent to Item('x')
-item['x']['y'] is equivalent to Item('x')['y']
+item is an alias to the Item class.
 """
 
 
@@ -588,33 +565,9 @@ class Attribute(extractors.Attribute, _ValueIsMixin):
     """
     TODO: Document
     """
-    pass
 
 
-class _AttributeCreator(extractors._AttributeCreator):
-    """
-    TODO: Document
-    """
-
-    def __getattr__(self, attribute):
-        """
-        :param attribute: A valid attribute name value
-        :return: an AttributeExtractor instance
-        :rtype: Attribute
-        """
-
-        return Attribute(attribute)
-
-attr = prop = _AttributeCreator()
+attr = prop = Attribute
 """
-attr is a special shortcut to enable working with the Attribute class
-to feel more natural. attr is an instance of the private _AttributeCreator
-class which mirrors the functionality of the Attribute class but is not
-actually an instance of Attribute itself. This allows attr to be used
-to generate natural looking attr extraction expressions.
-
-Examples:
-
-attr.x is equivalent to Item('x')
-attr.x.y is equivalent to Item('x').y
+attr is an alias to the Attribute class.
 """
