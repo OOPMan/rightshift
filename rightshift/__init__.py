@@ -353,7 +353,7 @@ class Identity(Transformer):
         """
         return value
 
-identity = Identity()
+identity = Identity = Identity()
 """
 TODO: Document
 """
