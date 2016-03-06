@@ -3,12 +3,7 @@ from future.utils import raise_from
 import re
 
 from rightshift import Transformer, RightShiftException
-from rightshift.extractors import Item as _Item
-from rightshift.extractors import ItemChain as _ItemChain
-from rightshift.extractors import _ItemCreator as __ItemCreator
-from rightshift.extractors import Attribute as _Attribute
-from rightshift.extractors import AttributeChain as _AttributeChain
-from rightshift.extractors import _AttributeCreator as __AttributeCreator
+from rightshift import extractors
 
 __author__ = 'adam.jorgensen.za@gmail.com'
 
@@ -530,7 +525,7 @@ class _ValueIsMixin(object):
         return _ValueIs(self)
 
 
-class ItemChain(_ItemChain, _ValueIsMixin):
+class ItemChain(extractors.ItemChain, _ValueIsMixin):
     """
     TODO: Document
     """
@@ -539,14 +534,14 @@ class ItemChain(_ItemChain, _ValueIsMixin):
         return ItemChain(self, Item(item_or_slice))
 
 
-class Item(_Item, _ValueIsMixin):
+class Item(extractors.Item, _ValueIsMixin):
     """
     TODO: Document
     """
     pass
 
 
-class _ItemCreator(__ItemCreator):
+class _ItemCreator(extractors._ItemCreator):
     """
     TODO: Document
     """
@@ -575,7 +570,7 @@ item['x']['y'] is equivalent to Item('x')['y']
 """
 
 
-class AttributeChain(_AttributeChain, _ValueIsMixin):
+class AttributeChain(extractors.AttributeChain, _ValueIsMixin):
     """
     TODO: Document
     """
@@ -589,14 +584,14 @@ class AttributeChain(_AttributeChain, _ValueIsMixin):
         return AttributeChain(self, Attribute(attribute))
 
 
-class Attribute(_Attribute, _ValueIsMixin):
+class Attribute(extractors.Attribute, _ValueIsMixin):
     """
     TODO: Document
     """
     pass
 
 
-class _AttributeCreator(__AttributeCreator):
+class _AttributeCreator(extractors._AttributeCreator):
     """
     TODO: Document
     """
