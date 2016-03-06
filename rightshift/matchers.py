@@ -2,7 +2,7 @@ from copy import copy
 from future.utils import raise_from
 import re
 
-from rightshift import Transformer, RightShiftException
+from rightshift import Transformer, RightShiftException, Chain
 from rightshift import extractors
 
 __author__ = 'adam.jorgensen.za@gmail.com'
@@ -13,7 +13,6 @@ class MatcherException(RightShiftException):
     MatcherException is a base class for all exceptions that may be thrown
     by Matcher instances due either instantiation or matching.
     """
-    pass
 
 
 class Matcher(Transformer):
@@ -203,21 +202,21 @@ def must_not(*matchers):
 
 class IsInstance(Matcher):
     """
-    An IsInstance matcher is very simple. When called with a value it will indicate
-    whether the value is an instance of the type the matcher was instantiated
-    with.
+    An IsInstance matcher is very simple. When called with a value it will
+    indicate whether the value is an instance of the type or types the matcher
+    was nstantiated with.
     """
-    def __init__(self, type):
+    def __init__(self, *types):
         """
-        :param type: A type or tuple of types.
+        :param types: One or more types for use with the isinstance check.
         """
-        self.type = type
+        self.types = types
 
     def __call__(self, value, **flags):
         """
-        TODO: Document
+        Perform on instance check on value.
         """
-        return isinstance(value, self.type)
+        return isinstance(value, self.types)
 
 is_instance = IsInstance
 """
@@ -439,105 +438,130 @@ An alias to the Pattern class.
 """
 
 
-class _ValueIs(object):
+def _get_value_is_class(left=None):
     """
-    TODO: Document
+    This function generates a ValueIs class that implements comparison operators
+    tied to the Comparison sub-classes defined above.
+
+    These operators exist at the class level and thus the ValueIs class does
+    not need to be instantiated in order to make use of these operators. In
+    fact, the ValueIs class does not support being instantiated and will raise
+    a NotImplementedError if one attempts to do so.
+
+    A left value which is an instance of the Transformer class may be supplied
+    to this function in order to alter the behaviour of the comparison operator
+    methods.
+
+    Normally, the comparison operator methods will simply return an instance of
+    the relevant Comparison class:
+
+    ValueIs = _get_value_is_class()
+    ValueIs == 5 returns EqualTo(5)
+
+    If a Transformer is supplied when this function is called then the comparison
+    methods behave so as to return the result of chaining the supplied instance
+    with the generated Comparison:
+
+    ValueIs = _get_value_is_class(x)
+    ValueIs == 5 returns x >> EqualTo(5)
+
+    This behaviour is leveraged by the ValueIsMixin in this module to implement
+    the value_is property on the Item, ItemChain, Attribute and AttributeChain
+    classes defined in this module.
+
+    :param left: Defaults to None
+    :returns: a ValueIs class
     """
-    def __init__(self, left=None):
-        self.left = left
+    def generate_comparison_method(comparator):
+        if isinstance(left, Transformer):
+            return lambda cls, other: left >> comparator(other)
+        else:
+            return lambda cls, other: comparator(other)
 
-    def __call__(self, right, left=None):
-        """
-        TODO: Document
-        :param right:
-        :param left:
-        :return:
-        """
-        if left is None:
-            left = self.left
-        return right if left is None else left >> right
+    class ValueIs(object):
+        __metaclass__ = type('ValueIsMetaClass', bases=(type,), dict={
+            method: generate_comparison_method(comparison)
+            for method, comparison in (
+                ('__lt__', LessThan),
+                ('__le__', LessThanEqualTo),
+                ('__eq__', EqualTo),
+                ('__ne__', NotEqualTo),
+                ('__ge__', GreaterThanEqualTo),
+                ('__gt__', GreaterThan)
+            )
+        })
 
-    def __lt__(self, other):
-        """
-        TODO: Document
-        """
-        return self(LessThan(other))
+        def __new__(cls, *args, **kwargs):
+            raise NotImplementedError
 
-    def __le__(self, other):
-        """
-        TODO: Document
-        """
-        return self(LessThanEqualTo(other))
+    return ValueIs
 
-    def __eq__(self, other):
-        """
-        TODO: Document
-        """
-        return self(EqualTo(other))
-
-    def __ne__(self, other):
-        """
-        TODO: Document
-        """
-        return self(NotEqualTo(other))
-
-    def __ge__(self, other):
-        """
-        TODO: Document
-        """
-        return self(GreaterThanEqualTo(other))
-
-    def __gt__(self, other):
-        """
-        TODO: Document
-        """
-        return self(GreaterThan(other))
-
-value_is = _ValueIs()
+value_is = ValueIs = _get_value_is_class()
 """
 value_is is a special shortcut to enable working with the Comparison sub-classes
 LessThan, LessThanEqualTo, EqualTo, NotEqualTo, GreaterThanEqualTo or GreaterThan
 classes to feel more natural.
 
-value is an instance of the private _ValueIs() class. This classes implements
-the various comparison operator methods and in order to return instances of the
-Comparison sub-classes.
+value_is is a special class that implements the various comparison operator
+methods at a class-level via the meta-class facility in Python in order to
+return instances of the Comparison sub-classes.
 
 Examples:
 
 value_is >= 5 is equivalent to GreaterThanEqualTo(5)
 value_is != True is equivalent to NotEqualTo(True)
-value_is >= 5
 """
 
 
-class _ValueIsMixin(object):
+class ValueIsMixin(object):
     """
-    TODO: Document
+    The ValueIsMixin exposes a read-only property named value_is that
+    leverages the _get_value_is_class function in this module to implement
+    seamless chaining of a Transformer with the functionality provided by
+    the ValueIs class.
     """
-
     @property
     def value_is(self):
-        """
-        TODO: Document
-
-        :return:
-        """
-        return _ValueIs(self)
+        return _get_value_is_class(self)
 
 
-class ItemChain(extractors.ItemChain, _ValueIsMixin):
+class ItemMixin(object):
     """
-    TODO: Document
+    A mix-in that implements the __getattr__ and __getitem__ methods such that
+    they return an ItemChain wrapping an Item.
     """
+    def __getattr__(self, item_name):
+        """
+        :param item_name: A valid item name value
+        :return: an ItemChain instance
+        :rtype: ItemChain
+        """
+        return ItemChain(self, Item(item_name))
 
     def __getitem__(self, item_or_slice):
+        """
+        :param item_or_slice: A valid item name or slice value
+        :return: an ItemChain instance
+        :rtype: ItemChain
+        """
         return ItemChain(self, Item(item_or_slice))
 
 
-class Item(extractors.Item, _ValueIsMixin):
+class ItemChain(Chain, ItemMixin, ValueIsMixin):
     """
-    TODO: Document
+    A variant on the ItemChain extractor found in rightshift.extractors
+    that exposes a special value_is property in order to allow usage like:
+
+    item['x']['y'].value_is >= 5
+    """
+
+
+class Item(ItemMixin, extractors.Item, ValueIsMixin):
+    """
+    A variant on the Item extractor found in rightshift.extractors
+    that exposes a special value_is property in order to allow usage like:
+
+    item['x'].value_is >= 5
     """
 
 
@@ -547,27 +571,47 @@ item is an alias to the Item class.
 """
 
 
-class AttributeChain(extractors.AttributeChain, _ValueIsMixin):
+class AttributeMixin(object):
     """
-    TODO: Document
+    A mix-in that implements the __getattr__ and __getitem__ methods such that
+    they return an AttributeChain wrapping an Attribute.
     """
-
-    def __getattr__(self, attribute):
+    def __getattr__(self, item_name):
         """
-        :param attribute: A valid attribute name value
+        :param item_name: A valid item name value
         :return: an AttributeChain instance
         :rtype: AttributeChain
         """
-        return AttributeChain(self, Attribute(attribute))
+        return AttributeChain(self, Attribute(item_name))
+
+    def __getitem__(self, item_or_slice):
+        """
+        :param item_or_slice: A valid item name or slice value
+        :return: an AttributeChain instance
+        :rtype: AttributeChain
+        """
+        return AttributeChain(self, Attribute(item_or_slice))
 
 
-class Attribute(extractors.Attribute, _ValueIsMixin):
+class AttributeChain(Chain, AttributeMixin, ValueIsMixin):
     """
-    TODO: Document
+    A variant on the AttributeChain extractor found in rightshift.extractors
+    that exposes a special value_is property in order to allow usage like:
+
+    attr.x.y.value_is >= 5
+    """
+
+
+class Attribute(AttributeMixin, extractors.Attribute, ValueIsMixin):
+    """
+    A variant on the Attribute extractor found in rightshift.extractors that
+    exposes a special value_is property in order to allow usage like:
+
+    attr.x.value_is >= 5
     """
 
 
 attr = prop = Attribute
 """
-attr is an alias to the Attribute class.
+attr and prop are aliases to the Attribute class.
 """
