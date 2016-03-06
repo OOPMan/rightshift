@@ -20,7 +20,7 @@ class Extractor(Transformer):
     """
 
 
-class ItemChain(Chain):
+class ItemMixin(object):
     """
     TODO: Document
     """
@@ -30,7 +30,7 @@ class ItemChain(Chain):
         :return: an ItemChain instance
         :rtype: ItemChain
         """
-        return self.__getitem__(item_name)
+        return ItemChain(self, Item(item_name))
 
     def __getitem__(self, item_or_slice):
         """
@@ -41,7 +41,13 @@ class ItemChain(Chain):
         return ItemChain(self, Item(item_or_slice))
 
 
-class Item(Extractor):
+class ItemChain(Chain, ItemMixin):
+    """
+    TODO: Document
+    """
+
+
+class Item(Extractor, ItemMixin):
     """
     An Item instances expects to be called with a value that will be
     accessed as if it were a container type in order to retrieve the item or
@@ -80,21 +86,6 @@ class Item(Extractor):
         except Exception as e:
             raise_from(ExtractorException, e)
 
-    def __getattr__(self, item_name):
-        """
-        :param item_name: A valid item name value
-        :return: an ItemChain instance
-        :rtype: ItemChain
-        """
-        return self.__getitem__(item_name)
-
-    def __getitem__(self, item_or_slice):
-        """
-        :param item_or_slice: A valid item name or slice value
-        :return: an ItemChain instance
-        :rtype: ItemChain
-        """
-        return ItemChain(self, Item(item_or_slice))
 
 item = Item
 """
@@ -102,28 +93,34 @@ item is an alias to the Item class.
 """
 
 
-class AttributeChain(Chain):
+class AttributeMixin(object):
     """
     TODO: Document
     """
-    def __getattr__(self, attribute):
+    def __getattr__(self, item_name):
         """
-        :param attribute: A valid attribute name value
+        :param item_name: A valid item name value
         :return: an AttributeChain instance
         :rtype: AttributeChain
         """
-        return self.__getitem__(attribute)
+        return AttributeChain(self, Attribute(item_name))
 
-    def __getitem__(self, attribute):
+    def __getitem__(self, item_or_slice):
         """
-        :param attribute: A valid attribute name value
+        :param item_or_slice: A valid item name or slice value
         :return: an AttributeChain instance
         :rtype: AttributeChain
         """
-        return AttributeChain(self, Attribute(attribute))
+        return AttributeChain(self, Attribute(item_or_slice))
 
 
-class Attribute(Extractor):
+class AttributeChain(Chain, AttributeMixin):
+    """
+    TODO: Document
+    """
+
+
+class Attribute(Extractor, AttributeMixin):
     """
     An Attribute instance can be called with a value in order to
     attempt to retrieve an attribute on that value.
@@ -160,22 +157,6 @@ class Attribute(Extractor):
             return getattr(value, self.attribute)
         else:
             raise ExtractorException('{} has no attribute `{}`'.format(value, self.attribute))
-
-    def __getitem__(self, attribute):
-        """
-        :param attribute: A valid attribute name value
-        :return: an AttributeChain instance
-        :rtype: AttributeChain
-        """
-        return self.__getattr__(attribute)
-
-    def __getattr__(self, attribute):
-        """
-        :param attribute: A valid attribute name value
-        :return: an AttributeChain instance
-        :rtype: AttributeChain
-        """
-        return AttributeChain(self, Attribute(attribute))
 
 attr = prop = Attribute
 """
