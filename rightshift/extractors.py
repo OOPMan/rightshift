@@ -28,7 +28,7 @@ class ItemMixin(IndexOrAccessToChainMixin):
 
 class ItemChain(Chain, ItemMixin):
     """
-    TODO: Document
+    A chain of Item lookups.
     """
 
 
@@ -85,7 +85,7 @@ class AttributeMixin(IndexOrAccessToChainMixin):
 
 class AttributeChain(Chain, AttributeMixin):
     """
-    TODO: Document
+    A chain of attribute lookups.
     """
 
 
