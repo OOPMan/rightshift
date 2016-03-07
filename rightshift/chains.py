@@ -48,7 +48,7 @@ class Flags(ChainTransformer):
 
 flags = Flags
 """
-TODO: Document
+flags is an alias to the Flags class.
 """
 
 
@@ -95,5 +95,29 @@ class Default(ChainTransformer):
 
 default = Default
 """
-TODO: Document
+default is an alias to the Default class.
 """
+
+
+class IndexOrAccessToChainMixin(object):
+    """
+
+    """
+    __chain_class = None
+    __class = None
+
+    def __getattr__(self, item_name):
+        """
+        :param item_name: A valid item name value
+        :return: an ItemChain instance
+        :rtype: ItemChain
+        """
+        return self.__chain_class(self, self.__class(item_name))
+
+    def __getitem__(self, item_or_slice):
+        """
+        :param item_or_slice: A valid item name or slice value
+        :return: an ItemChain instance
+        :rtype: ItemChain
+        """
+        return self.__chain_class(self, self.__class(item_or_slice))

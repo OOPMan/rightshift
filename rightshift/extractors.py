@@ -1,38 +1,38 @@
 from future.utils import raise_from
 
 from rightshift import Transformer, TransformationException, Chain
+from rightshift.chains import IndexOrAccessToChainMixin
+from rightshift.magic import IndexOrAccessToInstantiate
 
 __author__ = 'adam.jorgensen.za@gmail.com'
 
 
-class ExtractorException(TransformationException): pass
-
-
-class Extractor(Transformer): pass
-
-
-class ItemChain(Chain):
+class ExtractorException(TransformationException):
     """
-    TODO: Document
+    Base class for all Exceptions thrown by components of this module.
     """
-    def __getattr__(self, item_name):
-        """
-        :param item_name: A valid item name value
-        :return: an ItemChain instance
-        :rtype: ItemChain
-        """
-        return self.__getitem__(item_name)
-
-    def __getitem__(self, item_or_slice):
-        """
-        :param item_or_slice: A valid item name or slice value
-        :return: an ItemChain instance
-        :rtype: ItemChain
-        """
-        return ItemChain(self, Item(item_or_slice))
 
 
-class Item(Extractor):
+class Extractor(Transformer):
+    """
+    Base class for all Transformers defined in this module. If you are writing
+    a new Transformer that that fits the general description of an Extractor
+    then it should inherit from this class.
+    """
+
+
+class ItemMixin(IndexOrAccessToChainMixin):
+    __chain_class = ItemChain
+    __class = Item
+
+
+class ItemChain(Chain, ItemMixin):
+    """
+    A chain of Item lookups.
+    """
+
+
+class Item(Extractor, ItemMixin):
     """
     An Item instances expects to be called with a value that will be
     accessed as if it were a container type in order to retrieve the item or
@@ -40,7 +40,19 @@ class Item(Extractor):
 
     If retrieval of the item fails from the value then an ExtractorException
     is raised.
+
+    Examples:
+
+    Item('x')
+    Item.x
+    Item['x']
+    Item.x.y
+    Item['x']['y']
+    Item[variable]
+    Item[42]
     """
+    __metaclass__ = IndexOrAccessToInstantiate
+
     def __init__(self, item_or_slice):
         """
         :param item_or_slice: A valid item name or slice value
@@ -59,101 +71,44 @@ class Item(Extractor):
         except Exception as e:
             raise_from(ExtractorException, e)
 
-    def __getattr__(self, item_name):
-        """
-        :param item_name: A valid item name value
-        :return: an ItemChain instance
-        :rtype: ItemChain
-        """
-        return self.__getitem__(item_name)
 
-    def __getitem__(self, item_or_slice):
-        """
-        :param item_or_slice: A valid item name or slice value
-        :return: an ItemChain instance
-        :rtype: ItemChain
-        """
-        return ItemChain(self, Item(item_or_slice))
-
-
-class __ItemCreator(object):
-    """
-    The _ItemCreator is a private class that is instantiated once
-    and assigned to the `item` variable in the rightshift.extractors module.
-
-    This allows syntax of the form item['key'], item.key and item('key') to be
-    used in place of the less compact Item('key') form.
-    """
-    def __call__(self, item_or_slice):
-        """
-        :param item_or_slice: A valid item name or slice value
-        :return: an Item instance
-        :rtype: Item
-        """
-        return self.__getitem__(item_or_slice)
-
-    def __getattr__(self, item_name):
-        """
-        :param item_name: A valid item name value
-        :return: an Item instance
-        :rtype: Item
-        """
-        return self.__getitem__(item_name)
-
-    def __getitem__(self, item_or_slice):
-        """
-        :param item_or_slice: A valid item name or slice value
-        :return: an Item instance
-        :rtype: Item
-        """
-
-        return Item(item_or_slice)
-
-
-item = __ItemCreator()
+item = Item
 """
-item is a special shortcut to enable working with the Item class to
-feel more natural. item is an instance of the private __ItemCreator
-class which mirrors the functionality of the Item class but is not
-actually an instance of Item itself. This allows item to be used to
-generate natural looking item extraction expressions.
-
-Examples:
-
-item['x'] is equivalent to Item('x')
-item['x']['y'] is equivalent to Item('x')['y']
+item is an alias to the Item class.
 """
 
 
-class AttributeChain(Chain):
+class AttributeMixin(IndexOrAccessToChainMixin):
+    __chain_class = AttributeChain
+    __class = Attribute
+
+
+class AttributeChain(Chain, AttributeMixin):
     """
-    TODO: Document
+    A chain of attribute lookups.
     """
-    def __getattr__(self, attribute):
-        """
-        :param attribute: A valid attribute name value
-        :return: an AttributeChain instance
-        :rtype: AttributeChain
-        """
-        return self.__getitem__(attribute)
-
-    def __getitem__(self, attribute):
-        """
-        :param attribute: A valid attribute name value
-        :return: an AttributeChain instance
-        :rtype: AttributeChain
-        """
-        return AttributeChain(self, Attribute(attribute))
 
 
-class Attribute(Extractor):
+class Attribute(Extractor, AttributeMixin):
     """
     An Attribute instance can be called with a value in order to
     attempt to retrieve an attribute on that value.
 
     If retrieval of the attribute fails from the value then an ExtractorException
     is raised.
+
+    Examples:
+
+    Attribute('x')
+    Attribute.x
+    Attribute['x']
+    Attribute('x').y
+    Attribute.x.y
+    Attribute['x']['y']
+    Attribute[variable]
     """
+    __metaclass__ = IndexOrAccessToInstantiate
+
     def __init__(self, attribute):
         """
         :param attribute: A valid attribute name value
@@ -172,74 +127,9 @@ class Attribute(Extractor):
         else:
             raise ExtractorException('{} has no attribute `{}`'.format(value, self.attribute))
 
-    def __getitem__(self, attribute):
-        """
-        :param attribute: A valid attribute name value
-        :return: an AttributeChain instance
-        :rtype: AttributeChain
-        """
-        return self.__getattr__(attribute)
-
-    def __getattr__(self, attribute):
-        """
-        :param attribute: A valid attribute name value
-        :return: an AttributeChain instance
-        :rtype: AttributeChain
-        """
-        return AttributeChain(self, Attribute(attribute))
-
-
-class __AttributeCreator(object):
-    """
-    The _AttributeCreator is a private class that is instantiated once
-    and assigned to the `attr` variable in the rightshift.extractors module.
-
-    This allows syntax of the form item['key'], item.key and item('key') to be
-    used in place of the less compact Item('key') form.
-    """
-    def __call__(self, attribute):
-        """
-        :param attribute: A valid attribute name value
-        :return: an AttributeExtractor instance
-        :rtype: Attribute
-        """
-        return self.__getattr__(attribute)
-
-    def __getitem__(self, attribute):
-        """
-        :param attribute: A valid attribute name value
-        :return: an AttributeExtractor instance
-        :rtype: Attribute
-        """
-        return self.__getattr__(attribute)
-
-    def __getattr__(self, attribute):
-        """
-        :param attribute: A valid attribute name value
-        :return: an AttributeExtractor instance
-        :rtype: Attribute
-        """
-
-        return Attribute(attribute)
-
-    def __setattr__(self, key, value):
-        """
-        :raise: NotImplementedError
-        """
-        raise NotImplementedError
-
-attr = __AttributeCreator()
+attr = prop = Attribute
 """
-attr is a special shortcut to enable working with the Attribute class
-to feel more natural. attr is an instance of the private __AttributeCreator
-class which mirrors the functionality of the Attribute class but is not
-actually an instance of Attribute itself. This allows attr to be used
-to generate natural looking attr extraction expressions.
-
-Examples:
-
-attr.x is equivalent to Item('x')
-attr.x.y is equivalent to Item('x').y
+attr and prop are aliases to the Attribute class.
 """
 
 

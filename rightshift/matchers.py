@@ -2,7 +2,9 @@ from copy import copy
 from future.utils import raise_from
 import re
 
-from rightshift import Transformer, RightShiftException
+import rightshift.chains
+from rightshift import Transformer, RightShiftException, Chain
+from rightshift import extractors
 
 __author__ = 'adam.jorgensen.za@gmail.com'
 
@@ -12,7 +14,6 @@ class MatcherException(RightShiftException):
     MatcherException is a base class for all exceptions that may be thrown
     by Matcher instances due either instantiation or matching.
     """
-    pass
 
 
 class Matcher(Transformer):
@@ -202,21 +203,21 @@ def must_not(*matchers):
 
 class IsInstance(Matcher):
     """
-    An IsInstance matcher is very simple. When called with a value it will indicate
-    whether the value is an instance of the type the matcher was instantiated
-    with.
+    An IsInstance matcher is very simple. When called with a value it will
+    indicate whether the value is an instance of the type or types the matcher
+    was nstantiated with.
     """
-    def __init__(self, type):
+    def __init__(self, *types):
         """
-        :param type: A type or tuple of types.
+        :param types: One or more types for use with the isinstance check.
         """
-        self.type = type
+        self.types = types
 
     def __call__(self, value, **flags):
         """
-        TODO: Document
+        Perform on instance check on value.
         """
-        return isinstance(value, self.type)
+        return isinstance(value, self.types)
 
 is_instance = IsInstance
 """
@@ -260,7 +261,6 @@ class Comparison(Matcher):
             if flags.get('comparison__falsey_exceptions', self.falsey_exceptions):
                 return False
             raise_from(MatcherException, e)
-        raise NotImplementedError
 
 compare_using = comparison = Comparison
 """
@@ -272,15 +272,37 @@ compare_using(lambda v, **flags: v.startswith('x'))
 """
 
 
-class LessThan(Comparison):
+class MethodComparison(Comparison):
+    """
+    TODO: Document
+    """
+    def __init__(self, value, falsey_exceptions=False):
+        """
+        TODO: Document
+
+        :param value:
+        :param falsey_exceptions:
+        :return:
+        """
+        super(MethodComparison, self).__init__(self.compare, falsey_exceptions)
+        self.value = value
+
+    def compare(self, value, **flags):
+        """
+        TODO: Document
+
+        :param value:
+        :param flags:
+        :return:
+        """
+        raise NotImplementedError
+
+
+class LessThan(MethodComparison):
     """
     A Less Than comparison.
     """
-    def __init__(self, value, falsey_exceptions=False):
-        super(LessThan, self).__init__(self.__compare, falsey_exceptions)
-        self.value = value
-
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         """
         TODO: Document
         """
@@ -292,15 +314,11 @@ An alias to the LessThan class.
 """
 
 
-class LessThanEqualTo(Comparison):
+class LessThanEqualTo(MethodComparison):
     """
     A Less than or equal to comparison.
     """
-    def __init__(self, value, falsey_exceptions=False):
-        super(LessThanEqualTo, self).__init__(self.__compare, falsey_exceptions)
-        self.value = value
-
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         """
         TODO: Document
         """
@@ -312,15 +330,11 @@ An alias to the LessThanEqualTo class.
 """
 
 
-class EqualTo(Comparison):
+class EqualTo(MethodComparison):
     """
     An equal to comparison.
     """
-    def __init__(self, value, falsey_exceptions=False):
-        super(EqualTo, self).__init__(self.__compare, falsey_exceptions)
-        self.value = value
-
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         """
         TODO: Document
         """
@@ -332,15 +346,11 @@ An alias to the EqualTo class.
 """
 
 
-class NotEqualTo(Comparison):
+class NotEqualTo(MethodComparison):
     """
     A not equal to comparison.
     """
-    def __init__(self, value, falsey_exceptions=False):
-        super(NotEqualTo, self).__init__(self.__compare, falsey_exceptions)
-        self.value = value
-
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         """
         TODO: Document
         """
@@ -352,15 +362,11 @@ An alias to the NotEqualTo class.
 """
 
 
-class GreaterThanEqualTo(Comparison):
+class GreaterThanEqualTo(MethodComparison):
     """
     A greater than or equal to comparison.
     """
-    def __init__(self, value, falsey_exceptions=False):
-        super(GreaterThanEqualTo, self).__init__(self.__compare, falsey_exceptions)
-        self.value = value
-
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         """
         TODO: Document
         """
@@ -372,15 +378,11 @@ An alias to the GreaterThanEqualTo class.
 """
 
 
-class GreaterThan(Comparison):
+class GreaterThan(MethodComparison):
     """
     A greater than comparison.
     """
-    def __init__(self, value, falsey_exceptions=False):
-        super(GreaterThan, self).__init__(self.__compare, falsey_exceptions)
-        self.value = value
-
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         """
         TODO: Document
         """
@@ -392,64 +394,7 @@ An alias to the GreaterThan class.
 """
 
 
-class __ValueIs(object):
-    """
-    TODO: Document
-    """
-    def __lt__(self, other):
-        """
-        TODO: Document
-        """
-        return LessThan(other)
-
-    def __le__(self, other):
-        """
-        TODO: Document
-        """
-        return LessThanEqualTo(other)
-
-    def __eq__(self, other):
-        """
-        TODO: Document
-        """
-        return EqualTo(other)
-
-    def __ne__(self, other):
-        """
-        TODO: Document
-        """
-        return NotEqualTo(other)
-
-    def __ge__(self, other):
-        """
-        TODO: Document
-        """
-        return GreaterThanEqualTo(other)
-
-    def __gt__(self, other):
-        """
-        TODO: Document
-        """
-        return GreaterThan(other)
-
-value_is = __ValueIs()
-"""
-value_is is a special shortcut to enable working with the Comparison sub-classes
-LessThan, LessThanEqualTo, EqualTo, NotEqualTo, GreaterThanEqualTo or GreaterThan
-classes to feel more natural.
-
-value is an instance of the private __ValueIs() class. This classes implements
-the various comparison operator methods and in order to return instances of the
-Comparison sub-classes.
-
-Examples:
-
-value_is >= 5 is equivalent to GreaterThanEqualTo(5)
-value_is != True is equivalent to NotEqualTo(True)
-"""
-
-
-class Between(Comparison):
+class Between(MethodComparison):
     """
     A between comparison
     """
@@ -459,11 +404,11 @@ class Between(Comparison):
         :param upper_bound: Exclusive upper boundary of the between comparison.
         :param falsey_exceptions: Defaults to False.
         """
-        super(Between, self).__init__(self.__compare, falsey_exceptions)
+        super(MethodComparison, self).__init__(self.compare, falsey_exceptions)
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
 
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         return self.lower_bound < value < self.upper_bound
 
 btw = between = Between
@@ -472,23 +417,168 @@ An alias to the Between class.
 """
 
 
-class Pattern(Comparison):
+class Pattern(MethodComparison):
     """
     A regex search/match. By default, search is used rather than match.
     """
     def __init__(self, pattern, search=True, falsey_exceptions=False):
-        super(Pattern, self).__init__(self.__compare, falsey_exceptions)
+        super(MethodComparison, self).__init__(self.compare, falsey_exceptions)
         from past.builtins import basestring
         if isinstance(pattern, basestring):
             pattern = re.compile(pattern)
         self.pattern = pattern
         self.search = search
 
-    def __compare(self, value, **flags):
+    def compare(self, value, **flags):
         method = self.pattern.search if flags.get('pattern__search', self.search) else self.pattern.match
         return method(value)
 
 matches_regex = Pattern
 """
 An alias to the Pattern class.
+"""
+
+
+def _get_value_is_class(left=None):
+    """
+    This function generates a ValueIs class that implements comparison operators
+    tied to the Comparison sub-classes defined above.
+
+    These operators exist at the class level and thus the ValueIs class does
+    not need to be instantiated in order to make use of these operators. In
+    fact, the ValueIs class does not support being instantiated and will raise
+    a NotImplementedError if one attempts to do so.
+
+    A left value which is an instance of the Transformer class may be supplied
+    to this function in order to alter the behaviour of the comparison operator
+    methods.
+
+    Normally, the comparison operator methods will simply return an instance of
+    the relevant Comparison class:
+
+    ValueIs = _get_value_is_class()
+    ValueIs == 5 returns EqualTo(5)
+
+    If a Transformer is supplied when this function is called then the comparison
+    methods behave so as to return the result of chaining the supplied instance
+    with the generated Comparison:
+
+    ValueIs = _get_value_is_class(x)
+    ValueIs == 5 returns x >> EqualTo(5)
+
+    This behaviour is leveraged by the ValueIsMixin in this module to implement
+    the value_is property on the Item, ItemChain, Attribute and AttributeChain
+    classes defined in this module.
+
+    :param left: Defaults to None
+    :returns: a ValueIs class
+    """
+    def generate_comparison_method(comparator):
+        if isinstance(left, Transformer):
+            return lambda cls, other: left >> comparator(other)
+        else:
+            return lambda cls, other: comparator(other)
+
+    class ValueIs(object):
+        __metaclass__ = type('ValueIsMetaClass', bases=(type,), dict={
+            method: generate_comparison_method(comparison)
+            for method, comparison in (
+                ('__lt__', LessThan),
+                ('__le__', LessThanEqualTo),
+                ('__eq__', EqualTo),
+                ('__ne__', NotEqualTo),
+                ('__ge__', GreaterThanEqualTo),
+                ('__gt__', GreaterThan)
+            )
+        })
+
+        def __new__(cls, *args, **kwargs):
+            raise NotImplementedError
+
+    return ValueIs
+
+value_is = ValueIs = _get_value_is_class()
+"""
+value_is is a special shortcut to enable working with the Comparison sub-classes
+LessThan, LessThanEqualTo, EqualTo, NotEqualTo, GreaterThanEqualTo or GreaterThan
+classes to feel more natural.
+
+value_is is a special class that implements the various comparison operator
+methods at a class-level via the meta-class facility in Python in order to
+return instances of the Comparison sub-classes.
+
+Examples:
+
+value_is >= 5 is equivalent to GreaterThanEqualTo(5)
+value_is != True is equivalent to NotEqualTo(True)
+"""
+
+
+class ValueIsMixin(object):
+    """
+    The ValueIsMixin exposes a read-only property named value_is that
+    leverages the _get_value_is_class function in this module to implement
+    seamless chaining of a Transformer with the functionality provided by
+    the ValueIs class.
+    """
+    @property
+    def value_is(self):
+        return _get_value_is_class(self)
+
+
+class ItemMixin(rightshift.chains.IndexOrAccessToChainMixin):
+    __chain_class = ItemChain
+    __class = Item
+
+
+class ItemChain(Chain, ItemMixin, ValueIsMixin):
+    """
+    A variant on the ItemChain extractor found in rightshift.extractors
+    that exposes a special value_is property in order to allow usage like:
+
+    item['x']['y'].value_is >= 5
+    """
+
+
+class Item(ItemMixin, extractors.Item, ValueIsMixin):
+    """
+    A variant on the Item extractor found in rightshift.extractors
+    that exposes a special value_is property in order to allow usage like:
+
+    item['x'].value_is >= 5
+    """
+
+
+item = Item
+"""
+item is an alias to the Item class.
+"""
+
+
+class AttributeMixin(rightshift.chains.IndexOrAccessToChainMixin):
+    __chain_class = AttributeChain
+    __class = Attribute
+
+
+class AttributeChain(Chain, AttributeMixin, ValueIsMixin):
+    """
+    A variant on the AttributeChain extractor found in rightshift.extractors
+    that exposes a special value_is property in order to allow usage like:
+
+    attr.x.y.value_is >= 5
+    """
+
+
+class Attribute(AttributeMixin, extractors.Attribute, ValueIsMixin):
+    """
+    A variant on the Attribute extractor found in rightshift.extractors that
+    exposes a special value_is property in order to allow usage like:
+
+    attr.x.value_is >= 5
+    """
+
+
+attr = prop = Attribute
+"""
+attr and prop are aliases to the Attribute class.
 """
