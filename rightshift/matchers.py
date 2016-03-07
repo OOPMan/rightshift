@@ -2,6 +2,7 @@ from copy import copy
 from future.utils import raise_from
 import re
 
+import rightshift.chains
 from rightshift import Transformer, RightShiftException, Chain
 from rightshift import extractors
 
@@ -525,26 +526,9 @@ class ValueIsMixin(object):
         return _get_value_is_class(self)
 
 
-class ItemMixin(object):
-    """
-    A mix-in that implements the __getattr__ and __getitem__ methods such that
-    they return an ItemChain wrapping an Item.
-    """
-    def __getattr__(self, item_name):
-        """
-        :param item_name: A valid item name value
-        :return: an ItemChain instance
-        :rtype: ItemChain
-        """
-        return ItemChain(self, Item(item_name))
-
-    def __getitem__(self, item_or_slice):
-        """
-        :param item_or_slice: A valid item name or slice value
-        :return: an ItemChain instance
-        :rtype: ItemChain
-        """
-        return ItemChain(self, Item(item_or_slice))
+class ItemMixin(rightshift.chains.IndexOrAccessToChainMixin):
+    __chain_class = ItemChain
+    __class = Item
 
 
 class ItemChain(Chain, ItemMixin, ValueIsMixin):
@@ -571,26 +555,9 @@ item is an alias to the Item class.
 """
 
 
-class AttributeMixin(object):
-    """
-    A mix-in that implements the __getattr__ and __getitem__ methods such that
-    they return an AttributeChain wrapping an Attribute.
-    """
-    def __getattr__(self, item_name):
-        """
-        :param item_name: A valid item name value
-        :return: an AttributeChain instance
-        :rtype: AttributeChain
-        """
-        return AttributeChain(self, Attribute(item_name))
-
-    def __getitem__(self, item_or_slice):
-        """
-        :param item_or_slice: A valid item name or slice value
-        :return: an AttributeChain instance
-        :rtype: AttributeChain
-        """
-        return AttributeChain(self, Attribute(item_or_slice))
+class AttributeMixin(rightshift.chains.IndexOrAccessToChainMixin):
+    __chain_class = AttributeChain
+    __class = Attribute
 
 
 class AttributeChain(Chain, AttributeMixin, ValueIsMixin):

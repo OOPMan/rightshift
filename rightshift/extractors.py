@@ -1,6 +1,7 @@
 from future.utils import raise_from
 
 from rightshift import Transformer, TransformationException, Chain
+from rightshift.chains import IndexOrAccessToChainMixin
 from rightshift.magic import IndexOrAccessToInstantiate
 
 __author__ = 'adam.jorgensen.za@gmail.com'
@@ -20,25 +21,9 @@ class Extractor(Transformer):
     """
 
 
-class ItemMixin(object):
-    """
-    TODO: Document
-    """
-    def __getattr__(self, item_name):
-        """
-        :param item_name: A valid item name value
-        :return: an ItemChain instance
-        :rtype: ItemChain
-        """
-        return ItemChain(self, Item(item_name))
-
-    def __getitem__(self, item_or_slice):
-        """
-        :param item_or_slice: A valid item name or slice value
-        :return: an ItemChain instance
-        :rtype: ItemChain
-        """
-        return ItemChain(self, Item(item_or_slice))
+class ItemMixin(IndexOrAccessToChainMixin):
+    __chain_class = ItemChain
+    __class = Item
 
 
 class ItemChain(Chain, ItemMixin):
@@ -93,25 +78,9 @@ item is an alias to the Item class.
 """
 
 
-class AttributeMixin(object):
-    """
-    TODO: Document
-    """
-    def __getattr__(self, item_name):
-        """
-        :param item_name: A valid item name value
-        :return: an AttributeChain instance
-        :rtype: AttributeChain
-        """
-        return AttributeChain(self, Attribute(item_name))
-
-    def __getitem__(self, item_or_slice):
-        """
-        :param item_or_slice: A valid item name or slice value
-        :return: an AttributeChain instance
-        :rtype: AttributeChain
-        """
-        return AttributeChain(self, Attribute(item_or_slice))
+class AttributeMixin(IndexOrAccessToChainMixin):
+    __chain_class = AttributeChain
+    __class = Attribute
 
 
 class AttributeChain(Chain, AttributeMixin):
