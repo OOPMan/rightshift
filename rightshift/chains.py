@@ -48,7 +48,7 @@ class Flags(ChainTransformer):
 
 flags = Flags
 """
-TODO: Document
+flags is an alias to the Flags class.
 """
 
 
@@ -95,7 +95,7 @@ class Default(ChainTransformer):
 
 default = Default
 """
-TODO: Document
+default is an alias to the Default class.
 """
 
 
