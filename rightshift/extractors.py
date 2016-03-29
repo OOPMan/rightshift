@@ -22,8 +22,9 @@ class Extractor(Transformer):
 
 
 class ItemMixin(IndexOrAccessToChainMixin):
-    __chain_class = ItemChain
-    __class = Item
+    @staticmethod
+    def __new__(cls, *more):
+        return super(ItemMixin, cls).__new__(cls, ItemChain, Item, *more)
 
 
 class ItemChain(Chain, ItemMixin):
@@ -79,8 +80,10 @@ item is an alias to the Item class.
 
 
 class AttributeMixin(IndexOrAccessToChainMixin):
-    __chain_class = AttributeChain
-    __class = Attribute
+    @staticmethod
+    def __new__(cls, *more):
+        return super(AttributeMixin, cls).__new__(cls, AttributeChain, Attribute,
+                                                  *more)
 
 
 class AttributeChain(Chain, AttributeMixin):
