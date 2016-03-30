@@ -345,17 +345,15 @@ TODO: Document
 
 class Identity(Transformer):
     """
-    Identity is extremely simple and simply returns whatever value it is called with.
+    Identity is extremely simple and simply returns whatever value it is called
+    with.
     """
     def __call__(self, value, **flags):
-        """
-        TODO: Document
-        """
         return value
 
 identity = Identity = Identity()
 """
-TODO: Document
+identity and Identity reference an instance of the rightshift.Identity class.
 """
 
 

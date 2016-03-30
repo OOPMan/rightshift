@@ -12,7 +12,7 @@ __author__ = 'adam.jorgensen.za@gmail.com'
 class MatcherException(RightShiftException):
     """
     MatcherException is a base class for all exceptions that may be thrown
-    by Matcher instances due either instantiation or matching.
+    by Matcher instances during either instantiation or matching.
     """
 
 
@@ -527,8 +527,9 @@ class ValueIsMixin(object):
 
 
 class ItemMixin(rightshift.chains.IndexOrAccessToChainMixin):
-    __chain_class = ItemChain
-    __class = Item
+    @staticmethod
+    def __new__(cls, *more):
+        return super(ItemMixin, cls).__new__(cls, ItemChain, Item, *more)
 
 
 class ItemChain(Chain, ItemMixin, ValueIsMixin):
@@ -556,8 +557,10 @@ item is an alias to the Item class.
 
 
 class AttributeMixin(rightshift.chains.IndexOrAccessToChainMixin):
-    __chain_class = AttributeChain
-    __class = Attribute
+    @staticmethod
+    def __new__(cls, *more):
+        return super(AttributeMixin, cls).__new__(cls, AttributeChain, Attribute,
+                                                  *more)
 
 
 class AttributeChain(Chain, AttributeMixin, ValueIsMixin):

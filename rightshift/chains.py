@@ -106,6 +106,13 @@ class IndexOrAccessToChainMixin(object):
     __chain_class = None
     __class = None
 
+    @staticmethod
+    def __new__(cls, chain_class, clazz, *more):
+        instance = super(IndexOrAccessToChainMixin, cls).__new__(cls, *more)
+        instance.__chain_class = chain_class
+        instance.__class = clazz
+        return instance
+
     def __getattr__(self, item_name):
         """
         :param item_name: A valid item name value
