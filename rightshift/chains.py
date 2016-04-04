@@ -36,6 +36,21 @@ class Flags(ChainTransformer):
     and handles them in a special fashion to ensure that the Flag information
     is passed on while the Flag object itself is not called as it does not
     implement __call__
+
+    Given:
+
+    f = a >> b >> c
+
+    Using the ordinary chaining syntax a Flags instance that should be pass
+    its information down the entire chain would require declaration as follows:
+
+    f = a >> b >> c >> flags(x=1)
+
+    In terms of readability this is sub-optimal and doesn't illustrate the
+    the execution order nicely. The > operator is overridden on Flags in order
+    to allow a more readable syntax to be used:
+
+     f = flags(x=1) > a >> b >> c
     """
     def __init__(self, **flags):
         """
@@ -45,6 +60,9 @@ class Flags(ChainTransformer):
 
     def __call__(self, left):
         return FlagsChain(self.flags, left)
+
+    def __gt__(self, other):
+        return other >> self
 
 flags = Flags
 """
