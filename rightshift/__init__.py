@@ -337,9 +337,9 @@ class Value(Transformer):
         """
         return self.value
 
-value = Value
+value = val = Value
 """
-TODO: Document
+value and val are aliases for the Value transform.
 """
 
 
@@ -351,7 +351,7 @@ class Identity(Transformer):
     def __call__(self, value, **flags):
         return value
 
-identity = Identity = Identity()
+identity = ident = Identity = Identity()
 """
 identity and Identity reference an instance of the rightshift.Identity class.
 """
