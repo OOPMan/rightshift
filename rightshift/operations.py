@@ -140,3 +140,5 @@ class CallOperation(Operation):
 
     def __call__(self, value, **kwargs):
         return value(*self.args, **self.kwargs)
+
+call = CallOperation
