@@ -11,6 +11,10 @@ class Operation(Transformer):
     pass
 
 
+class UnaryOperation(Operation):
+    pass
+
+
 class BinaryOperation(Operation):
     def __init__(self, value):
         self.value = value
@@ -19,6 +23,34 @@ class BinaryOperation(Operation):
 class ArithmeticOperation(Operation):
     def __init__(self, *values):
         self.values = values
+
+
+class NegationOperation(UnaryOperation):
+    def __call__(self, value):
+        return -value
+
+negate = NegationOperation = NegationOperation()
+
+
+class PositiveOperation(UnaryOperation):
+    def __call__(self, value):
+        return +value
+
+positive = PositiveOperation = PositiveOperation()
+
+
+class AbsoluteOperation(UnaryOperation):
+    def __call__(self, value):
+        return abs(value)
+
+absolute = AbsoluteOperation
+
+
+class LogicalNotOperation(UnaryOperation):
+    def __call__(self, value):
+        return not value
+
+logical_not = LogicalNotOperation
 
 
 class AddOperation(ArithmeticOperation):
@@ -51,15 +83,14 @@ class DivideOperation(ArithmeticOperation):
             value /= v
         return value
 
-div = divide = DivideOperation
+div = divide = true_divide = DivideOperation
 
 
 class FloorModuloOperation(BinaryOperation):
     def __call__(self, value, **flags):
         return value // self.value
 
-floor_mod = floor_modulo = FloorModuloOperation
-
+floor_mod = floor_modulo = floor_divide = FloorModuloOperation
 
 class ModuloOperation(BinaryOperation):
     def __call__(self, value, **flags):
