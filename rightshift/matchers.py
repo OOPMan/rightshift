@@ -1,5 +1,5 @@
 from copy import copy
-from future.utils import raise_from
+from future.utils import raise_from, with_metaclass
 import re
 
 import rightshift.chains
@@ -479,19 +479,19 @@ def _get_value_is_class(left=None):
         else:
             return lambda cls, other: comparator(other)
 
-    class ValueIs(object):
-        __metaclass__ = type('ValueIsMetaClass', bases=(type,), dict={
-            method: generate_comparison_method(comparison)
-            for method, comparison in (
-                ('__lt__', LessThan),
-                ('__le__', LessThanEqualTo),
-                ('__eq__', EqualTo),
-                ('__ne__', NotEqualTo),
-                ('__ge__', GreaterThanEqualTo),
-                ('__gt__', GreaterThan)
-            )
-        })
+    __metaclass = type('ValueIsMetaClass', bases=(type,), dict={
+        method: generate_comparison_method(comparison)
+        for method, comparison in (
+            ('__lt__', LessThan),
+            ('__le__', LessThanEqualTo),
+            ('__eq__', EqualTo),
+            ('__ne__', NotEqualTo),
+            ('__ge__', GreaterThanEqualTo),
+            ('__gt__', GreaterThan)
+        )
+    })
 
+    class ValueIs(with_metaclass(__metaclass, object)):
         def __new__(cls, *args, **kwargs):
             raise NotImplementedError
 

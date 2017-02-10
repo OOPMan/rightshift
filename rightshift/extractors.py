@@ -1,4 +1,4 @@
-from future.utils import raise_from
+from future.utils import raise_from, with_metaclass
 
 from rightshift import Transformer, TransformationException, Chain
 from rightshift.chains import IndexOrAccessToChainMixin
@@ -29,11 +29,11 @@ class ItemMixin(IndexOrAccessToChainMixin):
 
 class ItemChain(Chain, ItemMixin):
     """
-    A chain of Item lookups.
+    A chain of Item extractors.
     """
 
 
-class Item(Extractor, ItemMixin):
+class Item(with_metaclass(IndexOrAccessToInstantiate, Extractor, ItemMixin)):
     """
     An Item instances expects to be called with a value that will be
     accessed as if it were a container type in order to retrieve the item or
@@ -52,9 +52,8 @@ class Item(Extractor, ItemMixin):
     Item[variable]
     Item[42]
     """
-    __metaclass__ = IndexOrAccessToInstantiate
 
-    def __init__(self, item_or_slice):
+    def __init__(self, item_or_slice, _):
         """
         :param item_or_slice: A valid item name or slice value
         """
@@ -88,11 +87,11 @@ class AttributeMixin(IndexOrAccessToChainMixin):
 
 class AttributeChain(Chain, AttributeMixin):
     """
-    A chain of attribute lookups.
+    A chain of Attribute extractors.
     """
 
 
-class Attribute(Extractor, AttributeMixin):
+class Attribute(with_metaclass(IndexOrAccessToInstantiate, Extractor, AttributeMixin)):
     """
     An Attribute instance can be called with a value in order to
     attempt to retrieve an attribute on that value.
@@ -110,9 +109,8 @@ class Attribute(Extractor, AttributeMixin):
     Attribute['x']['y']
     Attribute[variable]
     """
-    __metaclass__ = IndexOrAccessToInstantiate
 
-    def __init__(self, attribute):
+    def __init__(self, attribute, _):
         """
         :param attribute: A valid attribute name value
         """
@@ -133,6 +131,51 @@ class Attribute(Extractor, AttributeMixin):
 attr = prop = Attribute
 """
 attr and prop are aliases to the Attribute class.
+"""
+
+
+class ObjectMixin(IndexOrAccessToChainMixin):
+    @staticmethod
+    def __new__(cls, *more):
+        return super(ObjectMixin, cls).__new__(cls, ObjectChain, Object, *more)
+
+
+class ObjectChain(Chain, ObjectMixin):
+    """
+    A chain of Object extractors
+    """
+    pass
+
+
+class Object(with_metaclass(IndexOrAccessToInstantiate, Extractor, ObjectMixin)):
+    """
+    An Object instance can be called with a value in order to retrieve an item,
+    slice or attribute on that value.
+
+    This class makes use of the functionality defined by the Attribute and Item
+    classes in this module and behaves in a similar fashion except that whereas
+    with Attribute and Item the indexing and attribute addressing methods may
+    be freely mixed, with this class the addressing method determines whether
+    the Item or Attribute class is used to extract data.
+    """
+
+    def __init__(self, item_or_attribute, determiner):
+        self.attribute = item_or_attribute
+        self.item_or_slice = item_or_attribute
+        self.determiner = determiner
+
+    def __call__(self, value, **flags):
+        if self.determiner == IndexOrAccessToInstantiate.ATTR:
+            return Attribute.__call__(self, value, **flags)
+        elif self.determiner == IndexOrAccessToInstantiate.ITEM:
+            return Item.__call__(self, value, **flags)
+        raise ExtractorException('self.determiner is not a valid value: '
+                                 '{}'.format(self.determiner))
+
+
+obj = Object
+"""
+obj is an alias to Object
 """
 
 
