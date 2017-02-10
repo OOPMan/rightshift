@@ -1,5 +1,6 @@
 from copy import copy
 from rightshift import Chain, ChainTransformer, TransformationException
+from rightshift.magic import IndexOrAccessToInstantiate
 
 __author__ = 'adam.jorgensen.za@gmail.com'
 
@@ -119,14 +120,14 @@ default is an alias to the Default class.
 
 class IndexOrAccessToChainMixin(object):
     """
-
+    TODO: Document
     """
     __chain_class = None
     __class = None
 
     @staticmethod
     def __new__(cls, chain_class, clazz, *more):
-        instance = super(IndexOrAccessToChainMixin, cls).__new__(cls, *more)
+        instance = super(IndexOrAccessToChainMixin, cls).__new__(cls)
         instance.__chain_class = chain_class
         instance.__class = clazz
         return instance
@@ -137,7 +138,9 @@ class IndexOrAccessToChainMixin(object):
         :return: an ItemChain instance
         :rtype: ItemChain
         """
-        return self.__chain_class(self, self.__class(item_name))
+        return self.__chain_class(self,
+                                  self.__class(item_name,
+                                               IndexOrAccessToInstantiate.ATTR))
 
     def __getitem__(self, item_or_slice):
         """
@@ -145,4 +148,6 @@ class IndexOrAccessToChainMixin(object):
         :return: an ItemChain instance
         :rtype: ItemChain
         """
-        return self.__chain_class(self, self.__class(item_or_slice))
+        return self.__chain_class(self,
+                                  self.__class(item_or_slice,
+                                               IndexOrAccessToInstantiate.ITEM))
