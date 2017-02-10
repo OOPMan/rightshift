@@ -78,7 +78,8 @@ class Transformer(object):
             return other(self)
 
         if not isinstance(other, Transformer):
-            other = Value(other)
+            raise TransformationException('A Transformer may only be chained'
+                                          'with another Transformer')
 
         return Chain(self, other)
 
@@ -104,15 +105,6 @@ class Transformer(object):
         else:
             transformers.append(other)
         return Detupling(transformers)
-
-    def __ror__(self, other):
-        """
-        TODO: Document
-
-        :param other:
-        :return:
-        """
-        return Value(other) | self
 
     def __and__(self, other):
         """
@@ -338,7 +330,7 @@ class Value(Transformer):
         """
         return self.value
 
-value = val = Value
+value = val = const = constant = Value
 """
 value and val are aliases for the Value transform.
 """
