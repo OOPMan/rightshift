@@ -1,4 +1,5 @@
 from copy import copy
+
 from future.utils import raise_from
 
 __author__ = 'adam.jorgensen.za@gmail.com'
@@ -88,7 +89,7 @@ class Transformer(object):
         :param other:
         :return:
         """
-        return Value(other) >> self
+        return self(other)
 
     def __or__(self, other):
         """
