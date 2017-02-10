@@ -1,4 +1,5 @@
 from copy import copy
+
 from future.utils import raise_from
 
 __author__ = 'adam.jorgensen.za@gmail.com'
@@ -77,7 +78,8 @@ class Transformer(object):
             return other(self)
 
         if not isinstance(other, Transformer):
-            other = Value(other)
+            raise TransformationException('A Transformer may only be chained'
+                                          'with another Transformer')
 
         return Chain(self, other)
 
@@ -88,7 +90,7 @@ class Transformer(object):
         :param other:
         :return:
         """
-        return Value(other) >> self
+        return self(other)
 
     def __or__(self, other):
         """
@@ -103,15 +105,6 @@ class Transformer(object):
         else:
             transformers.append(other)
         return Detupling(transformers)
-
-    def __ror__(self, other):
-        """
-        TODO: Document
-
-        :param other:
-        :return:
-        """
-        return Value(other) | self
 
     def __and__(self, other):
         """
@@ -337,7 +330,7 @@ class Value(Transformer):
         """
         return self.value
 
-value = val = Value
+value = val = const = constant = Value
 """
 value and val are aliases for the Value transform.
 """
