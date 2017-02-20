@@ -72,9 +72,9 @@ class Item(with_metaclass(IndexOrAccessToInstantiate, Extractor, ItemMixin)):
             raise_from(ExtractorException, e)
 
 
-item = Item
+item = items = Item
 """
-item is an alias to the Item class.
+item and items are aliases to the Item class.
 """
 
 
@@ -211,7 +211,7 @@ class PatternGroup(Extractor):
 
 pattern_group = PatternGroup
 """
-TODO: Document
+pattern_group is an alias to the PatternGroup class
 """
 
 
@@ -240,5 +240,8 @@ class CoerceTo(Extractor):
         return value
 
 coerce_to = CoerceTo
+"""
+coerce_to is an alias to the CoerceTo class
+"""
 
 

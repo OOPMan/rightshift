@@ -346,7 +346,8 @@ class Identity(Transformer):
 
 identity = ident = Identity = Identity()
 """
-identity and Identity reference an instance of the rightshift.Identity class.
+ident, identity and Identity reference an instance of the rightshift.Identity
+class.
 """
 
 
