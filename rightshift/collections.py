@@ -101,7 +101,34 @@ def drop_right(n):
 
 
 class DropWhileExtractor(Extractor):
-    pass
+    """
+    A DropWhileExtractor instance expects to be called with a value that is
+    iterable. When called with such a value it will yield an output iterable
+    omitting all the values that evaluate to truthy when the callable the instance
+    was initialised with is called on it up till the point at which a value
+    fails the truthiness check.
+    """
+    def __init__(self, f):
+        """
+        :param f: A callable object with the signature f(value, **flags)
+        """
+        if not callable(f):
+            raise ExtractorException('{} is not callable'.format(f))
+        self.f = f
+
+    def __call__(self, value, **flags):
+        if flags.get('take_while__generator'):
+            done = False
+            for v in value:
+                if not self.f(v, **flags):
+                    done = True
+                if done:
+                    yield v
+        else:
+            for idx, v in enumerate(value):
+                if not self.f(v, **flags):
+                    return value[idx:]
+            return []
 
 drop_while = DropWhileExtractor
 """
