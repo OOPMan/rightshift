@@ -104,9 +104,9 @@ class DropWhileExtractor(Extractor):
     """
     A DropWhileExtractor instance expects to be called with a value that is
     iterable. When called with such a value it will yield an output iterable
-    omitting all the values that evaluate to truthy when the callable the instance
-    was initialised with is called on it up till the point at which a value
-    fails the truthiness check.
+    omitting all the values that evaluate to truthy when the callable the
+    instance was initialised with is called on it up till the point at which a
+    value fails the truthiness check.
     """
     def __init__(self, f):
         """
@@ -133,4 +133,36 @@ class DropWhileExtractor(Extractor):
 drop_while = DropWhileExtractor
 """
 drop_while is an alias to the DropWhileExtractor class
+"""
+
+
+class PartitionExtractor(Extractor):
+    """
+    A PartitionExtractor instance expects to be called with a value that is
+    iterable. When called with such a value it will yield a 2-tuple of lists
+    of values produced from values in the iterable partitioned based on
+    the truthiness or falsiness per value as determined by the callable
+    the instance was initialised with.
+
+    In other news, these doc comments are horrific. I really need to improve
+    them.
+    """
+    def __init__(self, f):
+        if not callable(f):
+            raise ExtractorException('{} is not callable'.format(f))
+        self.f = f
+
+    def __call__(self, value, **flags):
+        a = []
+        b = []
+        for v in value:
+            if self.f(v, **flags):
+                a.append(v)
+            else:
+                b.append(v)
+        return a, b
+
+partition = PartitionExtractor
+"""
+partition is an alias to the PartitionExtractor class
 """
