@@ -1,6 +1,7 @@
-from copy import copy
-from future.utils import raise_from, with_metaclass
 import re
+from copy import copy
+
+from future.utils import raise_from, with_metaclass
 
 import rightshift.chains
 from rightshift import Transformer, RightShiftException, Chain
@@ -394,6 +395,33 @@ An alias to the GreaterThan class.
 """
 
 
+class Contains(MethodComparison):
+    """
+    A contains check. Determines if the input value contains the specified value
+    """
+    def __compare__(self, value, **flags):
+        return self.value in value
+
+contains = Contains
+"""
+An alias to the In class
+"""
+
+
+class ValueIsIn(MethodComparison):
+    """
+    The inversion of Contains. Determines if the specified value contains the
+    input value
+    """
+    def __compare__(self, value, **flags):
+        return value in self.value
+
+value_in = value_is_in = contained_in = ValueIsIn
+"""
+value_in, value_is_in and contained_in are aliases to the ValueIsIn class
+"""
+
+
 class Between(MethodComparison):
     """
     A between comparison
@@ -480,14 +508,15 @@ def _get_value_is_class(left=None):
             return lambda cls, other: comparator(other)
 
     __metaclass = type('ValueIsMetaClass', bases=(type,), dict={
-        method: generate_comparison_method(comparison)
-        for method, comparison in (
+        method: generate_comparison_method(comparator)
+        for method, comparator in (
             ('__lt__', LessThan),
             ('__le__', LessThanEqualTo),
             ('__eq__', EqualTo),
             ('__ne__', NotEqualTo),
             ('__ge__', GreaterThanEqualTo),
-            ('__gt__', GreaterThan)
+            ('__gt__', GreaterThan),
+            ('__contains__', Contains)
         )
     })
 
@@ -497,20 +526,23 @@ def _get_value_is_class(left=None):
 
     return ValueIs
 
-value_is = ValueIs = _get_value_is_class()
+value = value_is = ValueIs = _get_value_is_class()
 """
 value_is is a special shortcut to enable working with the Comparison sub-classes
-LessThan, LessThanEqualTo, EqualTo, NotEqualTo, GreaterThanEqualTo or GreaterThan
-classes to feel more natural.
+LessThan, LessThanEqualTo, EqualTo, NotEqualTo, GreaterThanEqualTo, GreaterThan
+and Contains classes to feel more natural.
 
 value_is is a special class that implements the various comparison operator
 methods at a class-level via the meta-class facility in Python in order to
 return instances of the Comparison sub-classes.
 
+Additional aliases are value and ValueIs
+
 Examples:
 
 value_is >= 5 is equivalent to GreaterThanEqualTo(5)
 value_is != True is equivalent to NotEqualTo(True)
+5 in value is equivalent to Contains(5)
 """
 
 
