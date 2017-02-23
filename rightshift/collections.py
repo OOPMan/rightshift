@@ -1,24 +1,45 @@
+from future.utils import raise_from
+
+from rightshift import Wrap as _Wrap, TransformationException
 from rightshift.extractors import Extractor, ExtractorException
-from rightshift.extractors import item
+from rightshift.extractors import Item
 
 
-head = item[0]
+class Wrap(_Wrap):
+    """
+    ExtractorException layer over the Wrap transformer
+    """
+    def __call__(self, value, **flags):
+        try:
+            return super(Wrap, self).__call__(value, **flags)
+        except TransformationException as e:
+            raise_from(ExtractorException, e)
+
+
+class Head(Item):
+    pass
+
+head = Head = Head[0]
 """
-head is an alias for rightshift.extractors.item[0]
+head is a reference to an instance of rightshift.collections.Head
 """
 
 
-class TailExtractor(Extractor):
+class Tail(Extractor):
     def __call__(self, value, **flags):
         if len(value):
             return value[1:]
         raise ExtractorException('Attempted to obtain tail of empty collection')
-tail = TrailExtractor = TailExtractor()
+tail = Tail = Tail()
 """
-tail is a reference to an instance of rightshift.collections.TailExtractor
+tail is a reference to an instance of rightshift.collections.Tail
 """
 
-last = item[-1]
+
+class Last(Item):
+    pass
+
+last = Last = Last[-1]
 """
 last is an alias for rightshift.extractors.item[-1]
 """
@@ -31,7 +52,14 @@ def take(n):
     :param n:
     :return:
     """
-    return item[0:n]
+    class Take(Item):
+        pass
+    return Take[0:n]
+
+Take = take
+"""
+An alias to take
+"""
 
 
 def take_right(n):
@@ -41,12 +69,19 @@ def take_right(n):
     :param n:
     :return:
     """
-    return item[-n:]
+    class TakeRight(Item):
+        pass
+    return TakeRight[-n:]
+
+TakeRight = take_right
+"""
+An alias to take_right
+"""
 
 
-class TakeWhileExtractor(Extractor):
+class TakeWhile(Extractor):
     """
-    A TakeWhileExtractor instance expects to be called with a value that is
+    A TakeWhile instance expects to be called with a value that is
     iterable. When called with such a value it will yield an output iterable
     of all the values that evaluate to truthy when the callable the instance
     was initialised with is called on it up till the point at which a value
@@ -76,9 +111,9 @@ class TakeWhileExtractor(Extractor):
                     break
             return output
 
-take_while = TakeWhileExtractor
+take_while = TakeWhile
 """
-take_while is an alias to the TakeWhileExtractor class
+take_while is an alias to the TakeWhile class
 """
 
 
@@ -88,7 +123,14 @@ def drop(n):
     :param n:
     :return:
     """
-    return item[n:]
+    class Drop(Item):
+        pass
+    return Drop[n:]
+
+Drop = drop
+"""
+An alias to drop
+"""
 
 
 def drop_right(n):
@@ -97,12 +139,19 @@ def drop_right(n):
     :param n:
     :return:
     """
-    return item[:-n]
+    class DropRight(Item):
+        pass
+    return DropRight[:-n]
+
+DropRight = drop_right
+"""
+An alias to drop_right
+"""
 
 
-class DropWhileExtractor(Extractor):
+class DropWhile(Extractor):
     """
-    A DropWhileExtractor instance expects to be called with a value that is
+    A DropWhile instance expects to be called with a value that is
     iterable. When called with such a value it will yield an output iterable
     omitting all the values that evaluate to truthy when the callable the
     instance was initialised with is called on it up till the point at which a
@@ -130,15 +179,15 @@ class DropWhileExtractor(Extractor):
                     return value[idx:]
             return []
 
-drop_while = DropWhileExtractor
+drop_while = DropWhile
 """
-drop_while is an alias to the DropWhileExtractor class
+drop_while is an alias to the DropWhile class
 """
 
 
-class PartitionExtractor(Extractor):
+class Partition(Extractor):
     """
-    A PartitionExtractor instance expects to be called with a value that is
+    A Partition instance expects to be called with a value that is
     iterable. When called with such a value it will yield a 2-tuple of lists
     of values produced from values in the iterable partitioned based on
     the truthiness or falsiness per value as determined by the callable
@@ -162,7 +211,18 @@ class PartitionExtractor(Extractor):
                 b.append(v)
         return a, b
 
-partition = PartitionExtractor
+partition = Partition
 """
-partition is an alias to the PartitionExtractor class
+partition is an alias to the Partition class
+"""
+
+
+def filter_with(f):
+    class Filter(Wrap):
+        pass
+    return Filter(lambda value: filter(f, value))
+
+Filter = filter_with
+"""
+An alias to filter_with
 """
