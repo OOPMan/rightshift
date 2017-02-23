@@ -404,7 +404,26 @@ class Contains(MethodComparison):
 
 contains = Contains
 """
-An alias to the In class
+An alias to the Contains class
+"""
+
+
+class ContainsSlice(MethodComparison):
+    """
+    A contains slice check. Determines if the input value contains the a slice
+    matching the specified value
+    """
+    def __compare__(self, value, **flags):
+        slice_length = len(self.value)
+        for offset in range(0, len(value) - slice_length - 1):
+            check_slice = value[offset:offset + slice_length]
+            if self.value == check_slice:
+                return True
+        return False
+
+contains_slice = ContainsSlice
+"""
+An alias to the ContainsSlice class
 """
 
 
