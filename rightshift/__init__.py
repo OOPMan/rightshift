@@ -356,14 +356,18 @@ class Wrap(Transformer):
     Wrap allows you to easily re-use an existing callable object in the context
     of a RightShift chain.
     """
-    def __init__(self, callable_object):
+    def __init__(self, callable_object, accepts_flags=False):
         if not callable(callable_object):
             raise TransformationException('{} is not callable'.format(callable_object))
         self.callable_object = callable_object
+        self.accepts_flags = accepts_flags
 
     def __call__(self, value, **flags):
         try:
-            return self.callable_object(value)
+            if self.accepts_flags:
+                return self.callable_object(value, **flags)
+            else:
+                return self.callable_object(value)
         except Exception as e:
             raise_from(TransformationException, e)
 
