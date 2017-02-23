@@ -399,7 +399,7 @@ class Contains(MethodComparison):
     """
     A contains check. Determines if the input value contains the specified value
     """
-    def __compare__(self, value, **flags):
+    def compare(self, value, **flags):
         return self.value in value
 
 contains = Contains
@@ -413,9 +413,9 @@ class ContainsSlice(MethodComparison):
     A contains slice check. Determines if the input value contains the a slice
     matching the specified value
     """
-    def __compare__(self, value, **flags):
+    def compare(self, value, **flags):
         slice_length = len(self.value)
-        for offset in range(0, len(value) - slice_length - 1):
+        for offset in range(0, len(value) - slice_length + 1):
             check_slice = value[offset:offset + slice_length]
             if self.value == check_slice:
                 return True
@@ -427,12 +427,40 @@ An alias to the ContainsSlice class
 """
 
 
+class StartsWithSlice(MethodComparison):
+    """
+    A starts with slice check. Determines if the input value starts with a slice
+    matching the specified value
+    """
+    def compare(self, value, **flags):
+        return self.value == value[0:len(self.value)]
+
+starts_with = starts_with_slice = StartsWithSlice
+"""
+An alias to the StartsWithSlice class
+"""
+
+
+class EndsWithSlice(MethodComparison):
+    """
+    A ends with slice check. Determines if the input value ends with a slice
+    matching the specified value
+    """
+    def compare(self, value, **flags):
+        return self.value == value[-len(self.value):]
+
+ends_with = ends_with_slice = EndsWithSlice
+"""
+An alias to the EndsWithSlice class
+"""
+
+
 class ValueIsIn(MethodComparison):
     """
     The inversion of Contains. Determines if the specified value contains the
     input value
     """
-    def __compare__(self, value, **flags):
+    def compare(self, value, **flags):
         return value in self.value
 
 value_in = value_is_in = contained_in = ValueIsIn
