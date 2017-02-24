@@ -218,11 +218,34 @@ partition is an alias to the Partition class
 
 
 def filter_with(f):
+    """
+    Implements the Filter operation
+
+    :param f:
+    :return:
+    """
     class Filter(Wrap):
         pass
     return Filter(lambda value: filter(f, value))
 
-Filter = filter_with
+Filter = filter_ = filter_with
 """
 An alias to filter_with
+"""
+
+
+def find(f):
+    """
+    Implements the Find operation
+
+    :param f:
+    :return:
+    """
+    class Find(Wrap):
+        pass
+    return Find(lambda value: next(v for v in value if f(v)))
+
+Find = find_with = find
+"""
+An alias to find
 """
