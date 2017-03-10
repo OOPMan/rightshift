@@ -1,3 +1,5 @@
+from itertools import chain
+
 from future.utils import raise_from
 
 from rightshift import Wrap as _Wrap, TransformationException
@@ -166,7 +168,7 @@ class DropWhile(Extractor):
         self.f = f
 
     def __call__(self, value, **flags):
-        if flags.get('take_while__generator'):
+        if flags.get('drop_while__generator'):
             done = False
             for v in value:
                 if not self.f(v, **flags):
@@ -249,3 +251,36 @@ Find = find_with = find
 """
 An alias to find
 """
+
+
+def map_with(f):
+    """
+    Implements the Map operation
+
+    :param f:
+    :return:
+    """
+    class Map(Wrap):
+        pass
+    # TODO: Find a way to support the varargs usage of map
+    return Map(lambda value: map(f, value))
+
+Map = map_ = map_with
+
+
+class FlatMap(Extractor):
+    """
+    Implements the Map and Flatten operation
+    """
+    def __init__(self, f):
+        if not callable(f):
+            raise ExtractorException('{} is not callable'.format(f))
+        self.f = f
+
+    def __call__(self, value, **flags):
+        if flags.get('flat_map__generator'):
+            return (v for v in chain.from_iterable(self.f(value)))
+        else:
+            return [v for v in chain.from_iterable(self.f(value))]
+
+flap_map = FlatMap
