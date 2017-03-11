@@ -1,3 +1,4 @@
+from builtins import map
 from itertools import chain
 
 from future.utils import raise_from
@@ -253,19 +254,26 @@ An alias to find
 """
 
 
-def map_with(f):
+class Map(Extractor):
     """
     Implements the Map operation
-
-    :param f:
-    :return:
     """
-    class Map(Wrap):
-        pass
-    # TODO: Find a way to support the varargs usage of map
-    return Map(lambda value: map(f, value))
+    def __init__(self, f):
+        if not callable(f):
+            raise ExtractorException('{} is not callable'.format(f))
+        self.f = f
 
-Map = map_ = map_with
+    def __call__(self, value, **flags):
+        if flags.get('map__unpack_value'):
+            output = map(self.f, *value)
+        else:
+            output = map(self.f, value)
+        if flags.get('map__generator'):
+            return output
+        else:
+            return list(output)
+
+map_with = map_ = Map
 
 
 class FlatMap(Extractor):
