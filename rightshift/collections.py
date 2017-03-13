@@ -1,5 +1,5 @@
 from builtins import map
-from functools import partial as _partial
+from functools import partial as _partial, reduce as _reduce
 from itertools import chain
 
 from future.utils import raise_from
@@ -263,8 +263,7 @@ class Map(WrappedExtractor):
         self.lazy = lazy
 
     def __call__(self, value, **flags):
-        from functools import partial
-        f = partial(super(Map, self).__call__, **flags)
+        f = _partial(super(Map, self).__call__, **flags)
         if flags.get('map__unpack_value', self.unpack_value):
             output = map(f, *value)
         else:
@@ -293,3 +292,28 @@ class Flatten(Extractor):
 
 flatten = Flatten()
 lazy_flatten = Flatten(lazy=True)
+
+
+class Fold(WrappedExtractor):
+    """
+    Implements the Fold operation
+    """
+    def __init__(self, callable_object, accepts_flags=False, initializer=None):
+        super(Fold, self).__init__(callable_object, accepts_flags)
+        self.initializer = initializer
+
+    def __call__(self, value, **flags):
+        return _reduce(_partial(super(Fold, self).__call__, **flags),
+                       value, self.initializer)
+
+fold = fold_with = Fold
+
+
+class Reduce(Fold):
+    """
+    Implements the Reduce operation
+    """
+    def __init__(self, callable_object, accepts_flags=False):
+        super(Reduce, self).__init__(callable_object, accepts_flags, initializer=None)
+
+reduce = reduce_with = Reduce
