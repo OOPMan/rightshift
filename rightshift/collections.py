@@ -1,20 +1,21 @@
 from builtins import map
+from functools import partial as _partial
 from itertools import chain
 
 from future.utils import raise_from
 
-from rightshift import Wrap as _Wrap, TransformationException
+from rightshift import Wrap, TransformationException
 from rightshift.extractors import Extractor, ExtractorException
 from rightshift.extractors import Item
 
 
-class Wrap(_Wrap):
+class WrappedExtractor(Wrap, Extractor):
     """
-    ExtractorException layer over the Wrap transformer
+    ExtractorException layer over the WrappedExtractor transformer
     """
     def __call__(self, value, **flags):
         try:
-            return super(Wrap, self).__call__(value, **flags)
+            return super(WrappedExtractor, self).__call__(value, **flags)
         except TransformationException as e:
             raise_from(ExtractorException, e)
 
@@ -82,7 +83,7 @@ An alias to take_right
 """
 
 
-class TakeWhile(Extractor):
+class TakeWhile(WrappedExtractor):
     """
     A TakeWhile instance expects to be called with a value that is
     iterable. When called with such a value it will yield an output iterable
@@ -90,29 +91,27 @@ class TakeWhile(Extractor):
     was initialised with is called on it up till the point at which a value
     fails the truthiness check.
     """
-    def __init__(self, f):
-        """
-        :param f: A callable object with the signature f(value, **flags)
-        """
-        if not callable(f):
-            raise ExtractorException('{} is not callable'.format(f))
-        self.f = f
+
+    def __init__(self, callable_object, accepts_flags=False, lazy=False):
+        super(TakeWhile, self).__init__(callable_object, accepts_flags)
+        self.lazy = lazy
 
     def __call__(self, value, **flags):
-        if flags.get('take_while__generator'):
+        if flags.get('take_while__lazy', self.lazy):
             for v in value:
-                if self.f(v, **flags):
+                if super(TakeWhile, self).__call__(value, **flags):
                     yield v
                 else:
                     break
         else:
             output = []
             for v in value:
-                if self.f(v, **flags):
+                if super(TakeWhile, self).__call__(value, **flags):
                     output.append(v)
                 else:
                     break
             return output
+
 
 take_while = TakeWhile
 """
@@ -152,7 +151,7 @@ An alias to drop_right
 """
 
 
-class DropWhile(Extractor):
+class DropWhile(WrappedExtractor):
     """
     A DropWhile instance expects to be called with a value that is
     iterable. When called with such a value it will yield an output iterable
@@ -160,25 +159,22 @@ class DropWhile(Extractor):
     instance was initialised with is called on it up till the point at which a
     value fails the truthiness check.
     """
-    def __init__(self, f):
-        """
-        :param f: A callable object with the signature f(value, **flags)
-        """
-        if not callable(f):
-            raise ExtractorException('{} is not callable'.format(f))
-        self.f = f
+
+    def __init__(self, callable_object, accepts_flags=False, lazy=False):
+        super().__init__(callable_object, accepts_flags)
+        self.lazy = lazy
 
     def __call__(self, value, **flags):
-        if flags.get('drop_while__generator'):
+        if flags.get('drop_while__lazy', self.lazy):
             done = False
             for v in value:
-                if not self.f(v, **flags):
+                if not done and not super(DropWhile, self).__call__(v, **flags):
                     done = True
                 if done:
                     yield v
         else:
             for idx, v in enumerate(value):
-                if not self.f(v, **flags):
+                if not super(DropWhile, self).__call__(v, **flags):
                     return value[idx:]
             return []
 
@@ -188,7 +184,7 @@ drop_while is an alias to the DropWhile class
 """
 
 
-class Partition(Extractor):
+class Partition(WrappedExtractor):
     """
     A Partition instance expects to be called with a value that is
     iterable. When called with such a value it will yield a 2-tuple of lists
@@ -199,16 +195,11 @@ class Partition(Extractor):
     In other news, these doc comments are horrific. I really need to improve
     them.
     """
-    def __init__(self, f):
-        if not callable(f):
-            raise ExtractorException('{} is not callable'.format(f))
-        self.f = f
-
     def __call__(self, value, **flags):
         a = []
         b = []
         for v in value:
-            if self.f(v, **flags):
+            if super(Partition, self).__call__(v, **flags):
                 a.append(v)
             else:
                 b.append(v)
@@ -220,18 +211,24 @@ partition is an alias to the Partition class
 """
 
 
-def filter_with(f):
+class Filter(WrappedExtractor):
     """
     Implements the Filter operation
-
-    :param f:
-    :return:
     """
-    class Filter(Wrap):
-        pass
-    return Filter(lambda value: filter(f, value))
+    def __init__(self, callable_object, accepts_flags=False, lazy=False):
+        super(Filter, self).__init__(callable_object, accepts_flags)
+        self.lazy = lazy
 
-Filter = filter_ = filter_with
+    def __call__(self, value, **flags):
+        f = _partial(super(Filter, self).__call__, **flags)
+        output = filter(f, value)
+        if flags.get('filter__lazy', self.lazy):
+            return output
+        else:
+            return list(output)
+
+
+filter_with = filter_ = Filter
 """
 An alias to filter_with
 """
@@ -244,7 +241,7 @@ def find(f):
     :param f:
     :return:
     """
-    class Find(Wrap):
+    class Find(WrappedExtractor):
         pass
     return Find(lambda value: next(v for v in value if f(v)))
 
@@ -254,21 +251,25 @@ An alias to find
 """
 
 
-class Map(Extractor):
+class Map(WrappedExtractor):
     """
     Implements the Map operation
     """
-    def __init__(self, f):
-        if not callable(f):
-            raise ExtractorException('{} is not callable'.format(f))
-        self.f = f
+
+    def __init__(self, callable_object, accepts_flags=False, unpack_value=False,
+                 lazy=True):
+        super().__init__(callable_object, accepts_flags)
+        self.unpack_value = unpack_value
+        self.lazy = lazy
 
     def __call__(self, value, **flags):
-        if flags.get('map__unpack_value'):
-            output = map(self.f, *value)
+        from functools import partial
+        f = partial(super(Map, self).__call__, **flags)
+        if flags.get('map__unpack_value', self.unpack_value):
+            output = map(f, *value)
         else:
-            output = map(self.f, value)
-        if flags.get('map__generator'):
+            output = map(f, value)
+        if flags.get('map__lazy', self.lazy):
             return output
         else:
             return list(output)
@@ -276,19 +277,19 @@ class Map(Extractor):
 map_with = map_ = Map
 
 
-class FlatMap(Extractor):
+class Flatten(Extractor):
     """
-    Implements the Map and Flatten operation
+    Implements the Flatten operation
     """
-    def __init__(self, f):
-        if not callable(f):
-            raise ExtractorException('{} is not callable'.format(f))
-        self.f = f
+
+    def __init__(self, lazy=False):
+        self.lazy = lazy
 
     def __call__(self, value, **flags):
-        if flags.get('flat_map__generator'):
-            return (v for v in chain.from_iterable(self.f(value)))
+        if flags.get('flatten__lazy', self.lazy):
+            return (v for v in chain.from_iterable(value))
         else:
-            return [v for v in chain.from_iterable(self.f(value))]
+            return [v for v in chain.from_iterable(value)]
 
-flap_map = FlatMap
+flatten = Flatten()
+lazy_flatten = Flatten(lazy=True)

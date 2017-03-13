@@ -364,7 +364,7 @@ class Wrap(Transformer):
 
     def __call__(self, value, **flags):
         try:
-            if self.accepts_flags:
+            if flags.get('wrap__accepts_flags', self.accepts_flags):
                 return self.callable_object(value, **flags)
             else:
                 return self.callable_object(value)
