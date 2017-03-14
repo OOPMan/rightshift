@@ -317,3 +317,15 @@ class Reduce(Fold):
         super(Reduce, self).__init__(callable_object, accepts_flags, initializer=None)
 
 reduce = reduce_with = Reduce
+
+
+class FoldLeft(Fold):
+    pass
+
+fold_left = fold_left_with = FoldLeft
+
+
+class ReduceLeft(Reduce):
+    pass
+
+reduce_left = reduce_left_with = ReduceLeft
