@@ -329,3 +329,22 @@ class ReduceLeft(Reduce):
     pass
 
 reduce_left = reduce_left_with = ReduceLeft
+
+
+class FoldRight(Fold):
+    """
+    Implements the Fold Right operation
+    """
+    def __call__(self, value, **flags):
+        return super(FoldRight, self).__call__(reversed(value), **flags)
+
+fold_right = fold_right_with = FoldRight
+
+
+class ReduceRight(Reduce, FoldRight):
+    """
+    Implements the Reduce Right operation
+    """
+    pass
+
+reduce_right = reduce_right_with = ReduceRight
