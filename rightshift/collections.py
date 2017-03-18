@@ -348,3 +348,18 @@ class ReduceRight(Reduce, FoldRight):
     pass
 
 reduce_right = reduce_right_with = ReduceRight
+
+
+class GroupBy(WrappedExtractor):
+    """
+    Implements the Group By operation
+    """
+    def __call__(self, value, **flags):
+        output = {}
+        for v in value:
+            key = super(GroupBy, self).__call__(v, **flags)
+            items = output.setdefault(key, [])
+            items.append(v)
+        return output
+
+group_by = GroupBy
