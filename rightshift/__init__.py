@@ -1,6 +1,7 @@
-from copy import copy
+import re
+from copy import copy, deepcopy
 
-from future.utils import raise_from
+from future.utils import raise_from, with_metaclass
 
 __author__ = 'adam.jorgensen.za@gmail.com'
 
@@ -18,6 +19,83 @@ class TransformationException(RightShiftException):
     to another value.
     """
     pass
+
+
+def _underscore(word):
+    """
+    Shameless nicked from inflection.
+
+    See http://inflection.readthedocs.io/en/latest/#inflection.underscore
+    """
+    word = re.sub(r"([A-Z]+)([A-Z][a-z])", r'\1_\2', word)
+    word = re.sub(r"([a-z\d])([A-Z])", r'\1_\2', word)
+    word = word.replace("-", "_")
+    return word.lower()
+
+
+def HasFlags(prefix=None, **flags):
+    """
+    Generates a HasFlags metaclass
+
+    TODO: Document
+
+    :param prefix:
+    :param flags:
+    :return:
+    """
+    class HasFlags(type):
+        """
+        The HasFlags metaclass
+
+        TODO: Document
+        """
+        @staticmethod
+        def __new__(mcs, name, bases, members):
+            if prefix is None:
+                _prefix = _underscore(name) + '__'
+            else:
+                _prefix = prefix + '__'
+            members['_prefix'] = _prefix
+            base__call__ = members['__call__']
+
+            class Flags(dict):
+                def __getitem__(self, item):
+                    if not item.startswith(_prefix):
+                        return self[_prefix + item]
+                    return super(Flags, self).__getitem__(item)
+
+                def __getattr__(self, item):
+                    return self[item]
+
+            def __call__(self, value, **input_flags):
+                for flag, flag_value in flags.items():
+                    key = _prefix + flag
+                    if key not in input_flags:
+                        input_flags[key] = flag_value
+                return base__call__(self, value, Flags(input_flags))
+
+            members['__call__'] = __call__
+            return type.__new__(mcs, name, bases, members)
+
+        def __call__(cls, *args, **kwargs):
+            """
+            TODO: Document
+
+            :param args:
+            :param kwargs:
+            :return:
+            """
+            instance_flags = deepcopy(flags)
+            for flag in flags:
+                if flag in kwargs:
+                    instance_flags[flag] = kwargs[flag]
+                    del kwargs[flag]
+            instance = super(HasFlags, cls).__call__(*args, **kwargs)
+            for flag, flag_value in instance_flags.items():
+                setattr(instance, flag, flag_value)
+            return instance
+
+    return HasFlags
 
 
 class ChainTransformer(object):
@@ -90,6 +168,7 @@ class Transformer(object):
         :param other:
         :return:
         """
+        # TODO: This should exclude ChainTransformers
         return self(other)
 
     def __or__(self, other):
@@ -237,22 +316,21 @@ def detupling(*transformers):
     return Detupling(transformers)
 
 
-class Tupling(Transformer):
+class Tupling(with_metaclass(HasFlags(lazy=False), Transformer)):
     """
     TODO: Document
     """
-    def __init__(self, transformers, generator=False):
+    def __init__(self, transformers):
         """
         TODO: Document
         """
         self.transformers = transformers
-        self.generator = generator
 
     def __call__(self, value, **flags):
         """
         TODO: Document
         """
-        if flags.get('tupling__generator', self.generator):
+        if flags.get(self._prefix + 'lazy', self.lazy):
             return (
                 transformer(value, **flags)
                 for transformer in self.transformers
