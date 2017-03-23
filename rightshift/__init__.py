@@ -33,6 +33,58 @@ def _underscore(word):
     return word.lower()
 
 
+class HasNoFlags(type):
+    """
+    The HasNoFlags metaclass
+
+    TODO: Document
+    """
+    @staticmethod
+    def __new__(mcs, name, bases, members, prefix=None, flags=None):
+        flags = {} if flags is None else flags
+        _prefix = _underscore(name) if prefix is None else prefix
+        members['_prefix'] = _prefix
+        _prefix += '__'
+        base__call__ = members['__call__']
+
+        class Flags(dict):
+            """
+            A tweaked dictionary that allows attribute-style access and 
+            enforces a namespace system
+            """
+            def __getitem__(self, item):
+                if not item.startswith(_prefix):
+                    return self[_prefix + item]
+                return super(Flags, self).__getitem__(item)
+
+            def __getattr__(self, item):
+                return self[item]
+
+        def __call__(self, value, **kwargs):
+            """
+            Wraps the __call__ function defined on the class being defined
+            in order to transform input **kwargs style flag values into 
+            an instance of our custom Flags dictionary class. This is used
+            to allowed Transformers to be written such that they expect to
+            receive flag values in the **kwargs style but pass them on to the
+            underlying __call__ as a standard parameter. As such, this function
+            is essential a non-signature preserving decorator
+            
+            :param self: 
+            :param value: 
+            :param kwargs: 
+            :return: 
+            """
+            for flag, flag_value in flags.items():
+                key = _prefix + flag
+                if key not in kwargs:
+                    kwargs[key] = getattr(self, flag, flag_value)
+            return base__call__(self, value, Flags(kwargs))
+
+        members['__call__'] = __call__
+        return super(HasNoFlags, mcs).__new__(mcs, name, bases, members)
+
+
 def HasFlags(prefix=None, **flags):
     """
     Generates a HasFlags metaclass
@@ -43,7 +95,7 @@ def HasFlags(prefix=None, **flags):
     :param flags:
     :return:
     """
-    class HasFlags(type):
+    class HasFlags(HasNoFlags):
         """
         The HasFlags metaclass
 
@@ -51,31 +103,8 @@ def HasFlags(prefix=None, **flags):
         """
         @staticmethod
         def __new__(mcs, name, bases, members):
-            if prefix is None:
-                _prefix = _underscore(name) + '__'
-            else:
-                _prefix = prefix + '__'
-            members['_prefix'] = _prefix
-            base__call__ = members['__call__']
-
-            class Flags(dict):
-                def __getitem__(self, item):
-                    if not item.startswith(_prefix):
-                        return self[_prefix + item]
-                    return super(Flags, self).__getitem__(item)
-
-                def __getattr__(self, item):
-                    return self[item]
-
-            def __call__(self, value, **input_flags):
-                for flag, flag_value in flags.items():
-                    key = _prefix + flag
-                    if key not in input_flags:
-                        input_flags[key] = flag_value
-                return base__call__(self, value, Flags(input_flags))
-
-            members['__call__'] = __call__
-            return type.__new__(mcs, name, bases, members)
+            return super(HasFlags, mcs).__new__(mcs, name, bases, members,
+                                                prefix, flags)
 
         def __call__(cls, *args, **kwargs):
             """
@@ -117,7 +146,7 @@ class ChainTransformer(object):
         raise NotImplementedError
 
 
-class Transformer(object):
+class Transformer(with_metaclass(HasNoFlags, object)):
     """
     A Transform is an object which can be called with a single input value.
 
@@ -137,11 +166,12 @@ class Transformer(object):
     an Exception will be raised if incompatible types are AND/ORed together.
     """
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         __call__ is used to implement the transformation process
 
         :param value:
+        :param flags:
         :return:
         """
         raise NotImplementedError
@@ -248,7 +278,7 @@ class Chain(Transformer):
         self.left = left
         self.right = right
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         TODO: Document
         """
@@ -274,7 +304,7 @@ class Detupling(Transformer):
         """
         self.transformers = transformers
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         TODO: Document
         """
@@ -311,8 +341,8 @@ def detupling(*transformers):
     :rtype: Detupling
     """
     if not transformers:
-        raise TransformationException('At least argument must be supplied to '
-                                      'rightshift.detupling')
+        raise TransformationException('At least one argument must be supplied '
+                                      'to rightshift.detupling')
     return Detupling(transformers)
 
 
@@ -326,11 +356,11 @@ class Tupling(with_metaclass(HasFlags(lazy=False), Transformer)):
         """
         self.transformers = transformers
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         TODO: Document
         """
-        if flags.get(self._prefix + 'lazy', self.lazy):
+        if flags.lazy:
             return (
                 transformer(value, **flags)
                 for transformer in self.transformers
@@ -387,7 +417,7 @@ def lazy_tupling(*transformers):
     if not transformers:
         raise TransformationException('At least argument must be supplied to '
                                       'rightshift.lazy_tupling')
-    return Tupling(transformers, True)
+    return Tupling(transformers, lazy=True)
 
 
 class Value(Transformer):
@@ -402,7 +432,7 @@ class Value(Transformer):
         """
         self.value = value
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         TODO: Document
         """
@@ -419,7 +449,7 @@ class Identity(Transformer):
     Identity is extremely simple and simply returns whatever value it is called
     with.
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         return value
 
 identity = ident = Identity = Identity()
@@ -429,20 +459,19 @@ class.
 """
 
 
-class Wrap(Transformer):
+class Wrap(with_metaclass(HasFlags(accepts_flags=False), Transformer)):
     """
     Wrap allows you to easily re-use an existing callable object in the context
     of a RightShift chain.
     """
-    def __init__(self, callable_object, accepts_flags=False):
+    def __init__(self, callable_object):
         if not callable(callable_object):
             raise TransformationException('{} is not callable'.format(callable_object))
         self.callable_object = callable_object
-        self.accepts_flags = accepts_flags
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         try:
-            if flags.get('wrap__accepts_flags', self.accepts_flags):
+            if flags.accepts_flags:
                 return self.callable_object(value, **flags)
             else:
                 return self.callable_object(value)
