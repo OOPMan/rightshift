@@ -42,9 +42,18 @@ class HasNoFlags(type):
     @staticmethod
     def __new__(mcs, name, bases, members, prefix=None, flags=None):
         flags = {} if flags is None else flags
+        base_flags = {}
+        for base in bases:
+            meta = type(base)
+            if issubclass(meta, (HasNoFlags,)):
+                base_flags.update(meta.flags())
+        base_flags.update(flags)
+        flags = base_flags
+        mcs.flags = lambda: deepcopy(flags)
         _prefix = _underscore(name) if prefix is None else prefix
         members['_prefix'] = _prefix
         _prefix += '__'
+        # TODO: Broken if class does not define __call__. FIX
         base__call__ = members['__call__']
 
         class Flags(dict):
@@ -82,49 +91,54 @@ class HasNoFlags(type):
             return base__call__(self, value, Flags(kwargs))
 
         members['__call__'] = __call__
+        # TODO: Fails when attempting to override
         return super(HasNoFlags, mcs).__new__(mcs, name, bases, members)
 
 
-def HasFlags(prefix=None, **flags):
+def HasFlags(*bases, prefix=None, **flags):
     """
     Generates a HasFlags metaclass
 
     TODO: Document
 
     :param prefix:
+    :param inherit_from:
     :param flags:
     :return:
     """
-    class HasFlags(HasNoFlags):
-        """
-        The HasFlags metaclass
+    meta_bases = tuple(set([
+        type(base) for base in bases
+        if issubclass(type(base), HasNoFlags)
+    ]))
+    meta_bases = (HasNoFlags,) if not meta_bases else meta_bases
 
+    @staticmethod
+    def __new__(mcs, name, bases, members):
+        return HasNoFlags.__new__(mcs, name, bases, members, prefix, flags)
+
+    def __call__(cls, *args, **kwargs):
+        """
         TODO: Document
+
+        :param args:
+        :param kwargs:
+        :return:
         """
-        @staticmethod
-        def __new__(mcs, name, bases, members):
-            return super(HasFlags, mcs).__new__(mcs, name, bases, members,
-                                                prefix, flags)
-
-        def __call__(cls, *args, **kwargs):
-            """
-            TODO: Document
-
-            :param args:
-            :param kwargs:
-            :return:
-            """
-            instance_flags = deepcopy(flags)
-            for flag in flags:
-                if flag in kwargs:
-                    instance_flags[flag] = kwargs[flag]
-                    del kwargs[flag]
-            instance = super(HasFlags, cls).__call__(*args, **kwargs)
-            for flag, flag_value in instance_flags.items():
-                setattr(instance, flag, flag_value)
-            return instance
-
-    return HasFlags
+        instance_flags = deepcopy(flags)
+        for flag in flags:
+            if flag in kwargs:
+                instance_flags[flag] = kwargs[flag]
+                del kwargs[flag]
+        instance = HasNoFlags.__call__(cls, *args, **kwargs)
+        for flag, flag_value in instance_flags.items():
+            setattr(instance, flag, flag_value)
+        return instance
+    members = {
+        '__new__': __new__,
+        '__call__': __call__
+    }
+    meta = type('HasFlags', meta_bases, members)
+    return with_metaclass(meta, *bases)
 
 
 class ChainTransformer(object):
@@ -146,7 +160,7 @@ class ChainTransformer(object):
         raise NotImplementedError
 
 
-class Transformer(with_metaclass(HasNoFlags, object)):
+class Transformer(HasFlags(object)):
     """
     A Transform is an object which can be called with a single input value.
 
@@ -346,7 +360,7 @@ def detupling(*transformers):
     return Detupling(transformers)
 
 
-class Tupling(with_metaclass(HasFlags(lazy=False), Transformer)):
+class Tupling(HasFlags(Transformer, lazy=False)):
     """
     TODO: Document
     """
@@ -459,7 +473,7 @@ class.
 """
 
 
-class Wrap(with_metaclass(HasFlags(accepts_flags=False), Transformer)):
+class Wrap(HasFlags(Transformer, accepts_flags=False)):
     """
     Wrap allows you to easily re-use an existing callable object in the context
     of a RightShift chain.
