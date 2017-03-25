@@ -33,9 +33,11 @@ def _underscore(word):
     return word.lower()
 
 
-class HasNoFlags(type):
+# TODO: Rename this to HasFlagsBase
+# TODO: We can probably relocate the functions on this back into the HasFlags builder now
+class HasFlagsBase(type):
     """
-    The HasNoFlags metaclass
+    The HasFlagsBase metaclass
 
     TODO: Document
     """
@@ -45,16 +47,15 @@ class HasNoFlags(type):
         base_flags = {}
         for base in bases:
             meta = type(base)
-            if issubclass(meta, (HasNoFlags,)):
+            if issubclass(meta, (HasFlagsBase,)):
                 base_flags.update(meta.flags())
         base_flags.update(flags)
         flags = base_flags
         mcs.flags = lambda: deepcopy(flags)
+
         _prefix = _underscore(name) if prefix is None else prefix
         members['_prefix'] = _prefix
         _prefix += '__'
-        # TODO: Broken if class does not define __call__. FIX
-        base__call__ = members['__call__']
 
         class Flags(dict):
             """
@@ -68,6 +69,14 @@ class HasNoFlags(type):
 
             def __getattr__(self, item):
                 return self[item]
+
+        temporary_class = super(HasFlagsBase, mcs).__new__(mcs, name, bases,
+                                                           members)
+        base__call__ = getattr(temporary_class, '__call__', None)
+        if base__call__ is None:
+            raise RightShiftException('__call__ must be defined')
+        base__call__is_wrapper = getattr(base__call__, '_is_has_flags_wrapper',
+                                         False)
 
         def __call__(self, value, **kwargs):
             """
@@ -88,11 +97,14 @@ class HasNoFlags(type):
                 key = _prefix + flag
                 if key not in kwargs:
                     kwargs[key] = getattr(self, flag, flag_value)
-            return base__call__(self, value, Flags(kwargs))
-
+            if base__call__is_wrapper:
+                return base__call__(self, value, **Flags(kwargs))
+            else:
+                return base__call__(self, value, Flags(kwargs))
+        __call__._is_has_flags_wrapper = True
         members['__call__'] = __call__
-        # TODO: Fails when attempting to override
-        return super(HasNoFlags, mcs).__new__(mcs, name, bases, members)
+
+        return super(HasFlagsBase, mcs).__new__(mcs, name, bases, members)
 
 
 def HasFlags(*bases, prefix=None, **flags):
@@ -101,20 +113,20 @@ def HasFlags(*bases, prefix=None, **flags):
 
     TODO: Document
 
+    :param *bases:
     :param prefix:
-    :param inherit_from:
     :param flags:
     :return:
     """
     meta_bases = tuple(set([
         type(base) for base in bases
-        if issubclass(type(base), HasNoFlags)
+        if issubclass(type(base), HasFlagsBase)
     ]))
-    meta_bases = (HasNoFlags,) if not meta_bases else meta_bases
+    meta_bases = (HasFlagsBase,) if not meta_bases else meta_bases
 
     @staticmethod
     def __new__(mcs, name, bases, members):
-        return HasNoFlags.__new__(mcs, name, bases, members, prefix, flags)
+        return HasFlagsBase.__new__(mcs, name, bases, members, prefix, flags)
 
     def __call__(cls, *args, **kwargs):
         """
@@ -129,7 +141,7 @@ def HasFlags(*bases, prefix=None, **flags):
             if flag in kwargs:
                 instance_flags[flag] = kwargs[flag]
                 del kwargs[flag]
-        instance = HasNoFlags.__call__(cls, *args, **kwargs)
+        instance = HasFlagsBase.__call__(cls, *args, **kwargs)
         for flag, flag_value in instance_flags.items():
             setattr(instance, flag, flag_value)
         return instance
