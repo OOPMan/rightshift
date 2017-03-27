@@ -43,19 +43,20 @@ class HasFlagsBase(type):
     """
     @staticmethod
     def __new__(mcs, name, bases, members, prefix=None, flags=None):
+        _prefix = _underscore(name) if prefix is None else prefix
+        _prefix += '__'
+        mcs.prefix = property(lambda cls: _prefix[:-2])
+
         flags = {} if flags is None else flags
         base_flags = {}
         for base in bases:
             meta = type(base)
             if issubclass(meta, (HasFlagsBase,)):
-                base_flags.update(meta.flags())
+                base_flags.update(base.default_flags)
         base_flags.update(flags)
         flags = base_flags
-        mcs.flags = lambda: deepcopy(flags)
-
-        _prefix = _underscore(name) if prefix is None else prefix
-        members['_prefix'] = _prefix
-        _prefix += '__'
+        mcs.default_flags = property(lambda cls: deepcopy(flags))
+        # TODO: Add mcs.flags to allow Flag building using prefix
 
         class Flags(dict):
             """
@@ -103,6 +104,9 @@ class HasFlagsBase(type):
                 return base__call__(self, value, Flags(kwargs))
         __call__._is_has_flags_wrapper = True
         members['__call__'] = __call__
+
+        # TODO: Add a flags method to the class that can be used to generate
+        # flags data for submission to the flags helpfer function
 
         return super(HasFlagsBase, mcs).__new__(mcs, name, bases, members)
 
