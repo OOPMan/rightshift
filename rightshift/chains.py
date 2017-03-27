@@ -1,5 +1,7 @@
-from copy import copy
+from copy import deepcopy
+
 from rightshift import Chain, ChainTransformer, TransformationException
+
 from rightshift.magic import IndexOrAccessToInstantiate
 
 __author__ = 'adam.jorgensen.za@gmail.com'
@@ -16,11 +18,11 @@ class FlagsChain(Chain):
         super(FlagsChain, self).__init__(left, None)
         self.flags = flags
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         TODO: Document
         """
-        use_flags = copy(self.flags)
+        use_flags = deepcopy(self.flags)
         use_flags.update(flags)
         return self.left(value, **use_flags)
 
@@ -53,10 +55,13 @@ class Flags(ChainTransformer):
 
      f = flags(x=1) > a >> b >> c
     """
-    def __init__(self, **flags):
+    # TODO: Allow namespace flags more easily
+    def __init__(self, *flag_dicts, **flags):
         """
         TODO: Document
         """
+        for flag_dict in flag_dicts:
+            flags.update(flag_dict)
         self.flags = flags
 
     def __call__(self, left):
