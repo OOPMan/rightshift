@@ -33,7 +33,24 @@ def _underscore(word):
     return word.lower()
 
 
-# TODO: Rename this to HasFlagsBase
+class Flags(dict):
+    """
+    A tweaked dictionary that allows attribute-style access and 
+    enforces a namespace system
+    """
+    def __init__(self, prefix, mapping=None, **kwargs):
+        self.prefix = prefix
+        super(Flags, self).__init__(mapping, **kwargs)
+
+    def __getitem__(self, item):
+        if not item.startswith(self.prefix):
+            return super(Flags, self).__getitem__(self.prefix + item)
+        return super(Flags, self).__getitem__(item)
+
+    def __getattr__(self, item):
+        return self[item]
+
+
 # TODO: We can probably relocate the functions on this back into the HasFlags builder now
 class HasFlagsBase(type):
     """
@@ -55,21 +72,8 @@ class HasFlagsBase(type):
                 base_flags.update(base.default_flags)
         base_flags.update(flags)
         flags = base_flags
-        mcs.default_flags = property(lambda cls: deepcopy(flags))
-        # TODO: Add mcs.flags to allow Flag building using prefix
-
-        class Flags(dict):
-            """
-            A tweaked dictionary that allows attribute-style access and 
-            enforces a namespace system
-            """
-            def __getitem__(self, item):
-                if not item.startswith(_prefix):
-                    return self[_prefix + item]
-                return super(Flags, self).__getitem__(item)
-
-            def __getattr__(self, item):
-                return self[item]
+        mcs.default_flags = property(lambda _: deepcopy(flags))
+        mcs.flags = lambda _, **kwargs: {_prefix + k: v for k, v in kwargs.items()}
 
         temporary_class = super(HasFlagsBase, mcs).__new__(mcs, name, bases,
                                                            members)
@@ -94,14 +98,15 @@ class HasFlagsBase(type):
             :param kwargs: 
             :return: 
             """
+            prefix = type(self).prefix + '__'
             for flag, flag_value in flags.items():
-                key = _prefix + flag
+                key = prefix + flag
                 if key not in kwargs:
                     kwargs[key] = getattr(self, flag, flag_value)
             if base__call__is_wrapper:
-                return base__call__(self, value, **Flags(kwargs))
+                return base__call__(self, value, **Flags(prefix, kwargs))
             else:
-                return base__call__(self, value, Flags(kwargs))
+                return base__call__(self, value, Flags(prefix, kwargs))
         __call__._is_has_flags_wrapper = True
         members['__call__'] = __call__
 
