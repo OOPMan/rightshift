@@ -274,6 +274,57 @@ class Transformer(HasFlags(object)):
         return Value(other) & self
 
 
+class OptionallyLazyTransformer(HasFlags(Transformer, lazy=False)):
+    """
+    An OptionallyLazyTransformer is one that can optionally return a value with 
+    is lazy in nature (E.g. a generator or some other object that implements the 
+    iterator protocol)
+    
+    
+    """
+    def __lazy_call__(self, value, flags):
+        """
+        This method implements the lazy form of the transformation
+        
+        :param value: 
+        :param flags: 
+        :return: 
+        """
+        raise NotImplementedError
+
+    def __eager_call__(self, value, flags):
+        """
+        This method implements the eager form of the transformation. Often this
+        is done by simply converting the result of the lazy form to concrete a
+        value or values.
+        
+        :param value: 
+        :param flags: 
+        :return: 
+        """
+        raise NotImplementedError
+
+    def __call__(self, value, flags):
+        """
+        This method implements the determination of whether to invoke the lazy
+        or eager form of the transformation
+        
+        :param value: 
+        :param flags: 
+        :return: 
+        """
+        method = self.__lazy_call__ if flags.lazy else self.__eager_call__
+        return method(value, flags)
+
+
+class LazyTransformer(HasFlags(OptionallyLazyTransformer, lazy=True)):
+    """
+    This class overrides the OptionallyLazyTransformer to make laziness the
+    default option. It may be an appropriate base for certain kinds of
+    transformers.
+    """
+
+
 class Chain(Transformer):
     """
     A Chain is a special Transform that is used to implement the >> operation
