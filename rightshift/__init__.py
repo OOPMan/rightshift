@@ -432,7 +432,7 @@ def detupling(*transformers):
     return Detupling(transformers)
 
 
-class Tupling(HasFlags(Transformer, lazy=False)):
+class Tupling(OptionallyLazyTransformer):
     """
     TODO: Document
     """
@@ -442,20 +442,14 @@ class Tupling(HasFlags(Transformer, lazy=False)):
         """
         self.transformers = transformers
 
-    def __call__(self, value, flags):
-        """
-        TODO: Document
-        """
-        if flags.lazy:
-            return (
-                transformer(value, **flags)
-                for transformer in self.transformers
-            )
-        else:
-            return [
-                transformer(value, **flags)
-                for transformer in self.transformers
-            ]
+    def __lazy_call__(self, value, flags):
+        return (
+            transformer(value, **flags)
+            for transformer in self.transformers
+        )
+
+    def __eager_call__(self, value, flags):
+        return tuple(self.__lazy_call__(value, flags))
 
     def __and__(self, other):
         """
@@ -467,7 +461,7 @@ class Tupling(HasFlags(Transformer, lazy=False)):
                 transformers.extend(other.transformers)
             else:
                 transformers.append(other)
-            return Tupling(transformers, self.generator)
+            return Tupling(transformers, lazy=self.lazy)
         return super(Tupling, self).__and__(other)
 
 
