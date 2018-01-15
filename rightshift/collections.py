@@ -1,4 +1,6 @@
-from builtins import map
+from __future__ import absolute_import, division, print_function
+from __future__ import unicode_literals
+from builtins import *
 from functools import partial as _partial, reduce as _reduce
 from itertools import chain
 
@@ -363,3 +365,37 @@ class GroupBy(WrappedExtractor):
         return output
 
 group_by = GroupBy
+
+
+class Grouped(Extractor, InherentlyLazy):
+    """
+    Implements the Grouped operation
+    """
+
+    def __init__(self, size, lazy=False):
+        self.size = size
+        self.lazy = lazy
+
+    def __call__(self, value, **flags):
+        print('In')
+        start = 0
+        end = self.size
+        # if flags.get('grouped__lazy', self.lazy):
+        while True:
+            chunk = value[start:end]
+            yield chunk
+            if len(chunk) < self.size:
+                break
+            start += self.size
+            end += self.size
+        # else:
+        #     output = []
+        #     while True:
+        #         chunk = value[start:end]
+        #         output.append(chunk)
+        #         if len(chunk) < self.size:
+        #             return output
+        #         start += self.size
+        #         end += self.size
+
+grouped = Grouped
