@@ -35,7 +35,7 @@ def _underscore(word):
 
 class Flags(dict):
     """
-    A tweaked dictionary that allows attribute-style access and 
+    A tweaked dictionary that allows attribute-style access and
     enforces a namespace system
     """
     def __init__(self, prefix, mapping=None, **kwargs):
@@ -51,19 +51,30 @@ class Flags(dict):
         return self[item]
 
 
-# TODO: We can probably relocate the functions on this back into the HasFlags builder now
 class HasFlagsBase(type):
     """
     The HasFlagsBase metaclass
 
     TODO: Document
     """
-    @staticmethod
-    def __new__(mcs, name, bases, members, prefix=None, flags=None):
+
+    def __new__(mcs, name, bases, members, *args, **kwargs):
+        """
+        TODO: Document
+
+        :param name:
+        :param bases:
+        :param members:
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        prefix = kwargs.get('prefix')
         _prefix = _underscore(name) if prefix is None else prefix
         _prefix += '__'
         mcs.prefix = property(lambda cls: _prefix[:-2])
 
+        flags = kwargs.get('flags')
         flags = {} if flags is None else flags
         base_flags = {}
         for base in bases:
@@ -86,17 +97,17 @@ class HasFlagsBase(type):
         def __call__(self, value, **kwargs):
             """
             Wraps the __call__ function defined on the class being defined
-            in order to transform input **kwargs style flag values into 
+            in order to transform input **kwargs style flag values into
             an instance of our custom Flags dictionary class. This is used
             to allowed Transformers to be written such that they expect to
             receive flag values in the **kwargs style but pass them on to the
             underlying __call__ as a standard parameter. As such, this function
             is essential a non-signature preserving decorator
-            
-            :param self: 
-            :param value: 
-            :param kwargs: 
-            :return: 
+
+            :param self:
+            :param value:
+            :param kwargs:
+            :return:
             """
             prefix = type(self).prefix + '__'
             for flag, flag_value in flags.items():
@@ -110,19 +121,17 @@ class HasFlagsBase(type):
         __call__._is_has_flags_wrapper = True
         members['__call__'] = __call__
 
-        # TODO: Add a flags method to the class that can be used to generate
-        # flags data for submission to the flags helpfer function
-
         return super(HasFlagsBase, mcs).__new__(mcs, name, bases, members)
 
 
-def HasFlags(*bases, prefix=None, **flags):
+def has_flags(*bases, metaclass=HasFlagsBase, prefix=None, **flags):
     """
     Generates a HasFlags metaclass
 
     TODO: Document
 
-    :param *bases:
+    :param bases:
+    :param metaclass:
     :param prefix:
     :param flags:
     :return:
@@ -131,15 +140,37 @@ def HasFlags(*bases, prefix=None, **flags):
         type(base) for base in bases
         if issubclass(type(base), HasFlagsBase)
     ]))
-    meta_bases = (HasFlagsBase,) if not meta_bases else meta_bases
+    meta_bases = (metaclass,) if not meta_bases else meta_bases
+    if metaclass != HasFlagsBase and metaclass not in meta_bases:
+        meta_bases = (metaclass,) + meta_bases
 
-    @staticmethod
-    def __new__(mcs, name, bases, members):
-        return HasFlagsBase.__new__(mcs, name, bases, members, prefix, flags)
+    def __new__(mcs, name, bases, members, *args, **kwargs):
+        """
+        TODO: Document
+
+        :param mcs:
+        :param name:
+        :param bases:
+        :param members:
+        :param args:
+        :param kwargs:
+        :return:
+        """
+    # def __new__(mcs, *args, **kwargs):
+        if 'prefix' not in kwargs:
+            kwargs['prefix'] = prefix
+        if 'flags' not in kwargs:
+            kwargs['flags'] = flags
+        return super(meta, mcs).__new__(
+            mcs, name, bases, members, *args, **kwargs
+        )
 
     def __call__(cls, *args, **kwargs):
         """
-        TODO: Document
+        This call method intercepts class instantiation in order to handle
+        flags. Flags are checked for and extracted so as not to be passed
+        along to the __init__ method defined on the class. The flag values passed
+        through are then set on the class instance once it has been created.
 
         :param args:
         :param kwargs:
@@ -150,7 +181,7 @@ def HasFlags(*bases, prefix=None, **flags):
             if flag in kwargs:
                 instance_flags[flag] = kwargs[flag]
                 del kwargs[flag]
-        instance = HasFlagsBase.__call__(cls, *args, **kwargs)
+        instance = super(meta, cls).__call__(*args, **kwargs)
         for flag, flag_value in instance_flags.items():
             setattr(instance, flag, flag_value)
         return instance
@@ -160,6 +191,9 @@ def HasFlags(*bases, prefix=None, **flags):
     }
     meta = type('HasFlags', meta_bases, members)
     return with_metaclass(meta, *bases)
+
+
+HasFlags = has_flags
 
 
 class ChainTransformer(object):
@@ -276,19 +310,19 @@ class Transformer(HasFlags(object)):
 
 class OptionallyLazyTransformer(HasFlags(Transformer, lazy=False)):
     """
-    An OptionallyLazyTransformer is one that can optionally return a value with 
-    is lazy in nature (E.g. a generator or some other object that implements the 
+    An OptionallyLazyTransformer is one that can optionally return a value with
+    is lazy in nature (E.g. a generator or some other object that implements the
     iterator protocol)
-    
-    
+
+
     """
     def __lazy_call__(self, value, flags):
         """
         This method implements the lazy form of the transformation
-        
-        :param value: 
-        :param flags: 
-        :return: 
+
+        :param value:
+        :param flags:
+        :return:
         """
         raise NotImplementedError
 
@@ -297,10 +331,10 @@ class OptionallyLazyTransformer(HasFlags(Transformer, lazy=False)):
         This method implements the eager form of the transformation. Often this
         is done by simply converting the result of the lazy form to concrete a
         value or values.
-        
-        :param value: 
-        :param flags: 
-        :return: 
+
+        :param value:
+        :param flags:
+        :return:
         """
         raise NotImplementedError
 
@@ -308,10 +342,10 @@ class OptionallyLazyTransformer(HasFlags(Transformer, lazy=False)):
         """
         This method implements the determination of whether to invoke the lazy
         or eager form of the transformation
-        
-        :param value: 
-        :param flags: 
-        :return: 
+
+        :param value:
+        :param flags:
+        :return:
         """
         method = self.__lazy_call__ if flags.lazy else self.__eager_call__
         return method(value, flags)
@@ -518,6 +552,7 @@ class Value(Transformer):
         """
         return self.value
 
+
 value = val = const = constant = Value
 """
 value and val are aliases for the Value transform.
@@ -531,6 +566,7 @@ class Identity(Transformer):
     """
     def __call__(self, value, flags):
         return value
+
 
 identity = ident = Identity = Identity()
 """
@@ -557,6 +593,7 @@ class Wrap(HasFlags(Transformer, accepts_flags=False)):
                 return self.callable_object(value)
         except Exception as e:
             raise_from(TransformationException, e)
+
 
 wrap = Wrap
 """
