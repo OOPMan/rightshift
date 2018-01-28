@@ -1,6 +1,6 @@
-from future.utils import raise_from, with_metaclass
+from future.utils import raise_from
 
-from rightshift import Transformer, TransformationException, Chain
+from rightshift import Transformer, TransformationException, Chain, HasFlags
 from rightshift.chains import IndexOrAccessToChainMixin
 from rightshift.magic import IndexOrAccessToInstantiate
 
@@ -22,9 +22,14 @@ class Extractor(Transformer):
 
 
 class ItemMixin(IndexOrAccessToChainMixin):
-    @staticmethod
-    def __new__(cls, *more):
-        return super(ItemMixin, cls).__new__(cls, ItemChain, Item, *more)
+    """
+    TODO: Document
+    """
+
+    def __init__(self):
+        super(ItemMixin, self).__init__()
+        self.chain_class = ItemChain
+        self.class_ = Item
 
 
 class ItemChain(Chain, ItemMixin):
@@ -33,7 +38,7 @@ class ItemChain(Chain, ItemMixin):
     """
 
 
-class Item(with_metaclass(IndexOrAccessToInstantiate, Extractor, ItemMixin)):
+class Item(HasFlags(Extractor, ItemMixin, metaclass=IndexOrAccessToInstantiate)):
     """
     An Item instances expects to be called with a value that will be
     accessed as if it were a container type in order to retrieve the item or
@@ -57,9 +62,10 @@ class Item(with_metaclass(IndexOrAccessToInstantiate, Extractor, ItemMixin)):
         """
         :param item_or_slice: A valid item name or slice value
         """
+        super(Item, self).__init__()
         self.item_or_slice = item_or_slice
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         :param value: The value to attempt extraction from
         :param flags: A dictionary of flags
@@ -79,10 +85,14 @@ item and items are aliases to the Item class.
 
 
 class AttributeMixin(IndexOrAccessToChainMixin):
-    @staticmethod
-    def __new__(cls, *more):
-        return super(AttributeMixin, cls).__new__(cls, AttributeChain, Attribute,
-                                                  *more)
+    """
+    TODO: Document
+    """
+
+    def __init__(self):
+        super(AttributeMixin, self).__init__()
+        self.chain_class = AttributeChain
+        self.class_ = Attribute
 
 
 class AttributeChain(Chain, AttributeMixin):
@@ -91,7 +101,7 @@ class AttributeChain(Chain, AttributeMixin):
     """
 
 
-class Attribute(with_metaclass(IndexOrAccessToInstantiate, Extractor, AttributeMixin)):
+class Attribute(HasFlags(Extractor, AttributeMixin, metaclass=IndexOrAccessToInstantiate)):
     """
     An Attribute instance can be called with a value in order to
     attempt to retrieve an attribute on that value.
@@ -114,6 +124,7 @@ class Attribute(with_metaclass(IndexOrAccessToInstantiate, Extractor, AttributeM
         """
         :param attribute: A valid attribute name value
         """
+        super(Attribute, self).__init__()
         self.attribute = attribute
 
     def __call__(self, value, **flags):
@@ -128,6 +139,7 @@ class Attribute(with_metaclass(IndexOrAccessToInstantiate, Extractor, AttributeM
         else:
             raise ExtractorException('{} has no attribute `{}`'.format(value, self.attribute))
 
+
 attr = prop = Attribute
 """
 attr and prop are aliases to the Attribute class.
@@ -135,9 +147,14 @@ attr and prop are aliases to the Attribute class.
 
 
 class ObjectMixin(IndexOrAccessToChainMixin):
-    @staticmethod
-    def __new__(cls, *more):
-        return super(ObjectMixin, cls).__new__(cls, ObjectChain, Object, *more)
+    """
+    TODO: Document
+    """
+
+    def __init__(self):
+        super(AttributeMixin, self).__init__()
+        self.chain_class = ObjectChain
+        self.class_ = Object
 
 
 class ObjectChain(Chain, ObjectMixin):
@@ -147,7 +164,7 @@ class ObjectChain(Chain, ObjectMixin):
     pass
 
 
-class Object(with_metaclass(IndexOrAccessToInstantiate, Extractor, ObjectMixin)):
+class Object(HasFlags(Extractor, ObjectMixin, metaclass=IndexOrAccessToInstantiate)):
     """
     An Object instance can be called with a value in order to retrieve an item,
     slice or attribute on that value.
@@ -160,6 +177,7 @@ class Object(with_metaclass(IndexOrAccessToInstantiate, Extractor, ObjectMixin))
     """
 
     def __init__(self, item_or_attribute, determiner):
+        super(Object, self).__init__()
         self.attribute = item_or_attribute
         self.item_or_slice = item_or_attribute
         self.determiner = determiner

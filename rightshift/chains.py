@@ -1,7 +1,6 @@
 from copy import deepcopy
 
 from rightshift import Chain, ChainTransformer, TransformationException
-
 from rightshift.magic import IndexOrAccessToInstantiate
 
 __author__ = 'adam.jorgensen.za@gmail.com'
@@ -70,6 +69,7 @@ class Flags(ChainTransformer):
     def __gt__(self, other):
         return other >> self
 
+
 flags = Flags
 """
 flags is an alias to the Flags class.
@@ -117,6 +117,7 @@ class Default(ChainTransformer):
     def __call__(self, left):
         return DefaultChain(self.default, left)
 
+
 default = Default
 """
 default is an alias to the Default class.
@@ -127,15 +128,11 @@ class IndexOrAccessToChainMixin(object):
     """
     TODO: Document
     """
-    __chain_class = None
-    __class = None
 
-    @staticmethod
-    def __new__(cls, chain_class, clazz, *more):
-        instance = super(IndexOrAccessToChainMixin, cls).__new__(cls)
-        instance.__chain_class = chain_class
-        instance.__class = clazz
-        return instance
+    def __init__(self):
+        super(IndexOrAccessToChainMixin, self).__init__()
+        self.chain_class = None
+        self.class_ = None
 
     def __getattr__(self, item_name):
         """
@@ -143,9 +140,9 @@ class IndexOrAccessToChainMixin(object):
         :return: an ItemChain instance
         :rtype: ItemChain
         """
-        return self.__chain_class(self,
-                                  self.__class(item_name,
-                                               IndexOrAccessToInstantiate.ATTR))
+        return self.chain_class(
+            self, self.class_(item_name, IndexOrAccessToInstantiate.ATTR)
+        )
 
     def __getitem__(self, item_or_slice):
         """
@@ -153,6 +150,6 @@ class IndexOrAccessToChainMixin(object):
         :return: an ItemChain instance
         :rtype: ItemChain
         """
-        return self.__chain_class(self,
-                                  self.__class(item_or_slice,
-                                               IndexOrAccessToInstantiate.ITEM))
+        return self.chain_class(
+            self, self.class_(item_or_slice, IndexOrAccessToInstantiate.ITEM)
+        )
