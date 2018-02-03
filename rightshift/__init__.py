@@ -72,7 +72,7 @@ class HasFlagsBase(type):
         prefix = kwargs.get('prefix')
         _prefix = _underscore(name) if prefix is None else prefix
         _prefix += '__'
-        mcs.prefix = property(lambda cls: _prefix[:-2])
+        mcs.prefix = property(lambda cls: cls._prefix[:-2])
 
         flags = kwargs.get('flags')
         flags = {} if flags is None else flags
@@ -83,6 +83,7 @@ class HasFlagsBase(type):
                 base_flags.update(base.default_flags)
         base_flags.update(flags)
         flags = base_flags
+        # TODO: These is going to be broken for every class that doesn't use HasFlags
         mcs.default_flags = property(lambda _: deepcopy(flags))
         mcs.flags = lambda _, **kwargs: {_prefix + k: v for k, v in kwargs.items()}
 
@@ -119,7 +120,10 @@ class HasFlagsBase(type):
             else:
                 return base__call__(self, value, Flags(prefix, kwargs))
         __call__._is_has_flags_wrapper = True
-        members['__call__'] = __call__
+        members.update({
+            '__call__': __call__,
+            '_prefix': _prefix
+        })
 
         return super(HasFlagsBase, mcs).__new__(mcs, name, bases, members)
 
