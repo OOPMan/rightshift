@@ -1,12 +1,13 @@
 from __future__ import absolute_import, division, print_function
 from __future__ import unicode_literals
-from builtins import *
+
 from functools import partial as _partial, reduce as _reduce
 from itertools import chain
 
+from builtins import *
 from future.utils import raise_from
 
-from rightshift import Wrap, TransformationException
+from rightshift import Wrap, TransformationException, LazyTransformer
 from rightshift.extractors import Extractor, ExtractorException
 from rightshift.extractors import Item
 
@@ -25,17 +26,41 @@ class WrappedExtractor(Wrap, Extractor):
 class Head(Item):
     pass
 
+
 head = Head = Head[0]
 """
 head is a reference to an instance of rightshift.collections.Head
 """
 
 
-class Tail(Extractor):
-    def __call__(self, value, **flags):
-        if len(value):
-            return value[1:]
-        raise ExtractorException('Attempted to obtain tail of empty collection')
+class Tail(LazyTransformer, Extractor):
+    def __lazy_call__(self, value, flags):
+        """
+        This method implements the lazy form of the transformation
+
+        :param value:
+        :param flags:
+        :return:
+        """
+        skip = True
+        for v in value:
+            if not skip:
+                yield v
+            skip = False if skip else skip
+
+    def __eager_call__(self, value, flags):
+        """
+        This method implements the eager form of the transformation. Often this
+        is done by simply converting the result of the lazy form to concrete a
+        value or values.
+
+        :param value:
+        :param flags:
+        :return:
+        """
+        return tuple(v for v in self.__lazy_call__(value, flags))
+
+
 tail = Tail = Tail()
 """
 tail is a reference to an instance of rightshift.collections.Tail
@@ -44,6 +69,7 @@ tail is a reference to an instance of rightshift.collections.Tail
 
 class Last(Item):
     pass
+
 
 last = Last = Last[-1]
 """
@@ -62,6 +88,7 @@ def take(n):
         pass
     return Take[0:n]
 
+
 Take = take
 """
 An alias to take
@@ -78,6 +105,7 @@ def take_right(n):
     class TakeRight(Item):
         pass
     return TakeRight[-n:]
+
 
 TakeRight = take_right
 """
@@ -131,6 +159,7 @@ def drop(n):
         pass
     return Drop[n:]
 
+
 Drop = drop
 """
 An alias to drop
@@ -146,6 +175,7 @@ def drop_right(n):
     class DropRight(Item):
         pass
     return DropRight[:-n]
+
 
 DropRight = drop_right
 """
@@ -180,6 +210,7 @@ class DropWhile(WrappedExtractor):
                     return value[idx:]
             return []
 
+
 drop_while = DropWhile
 """
 drop_while is an alias to the DropWhile class
@@ -206,6 +237,7 @@ class Partition(WrappedExtractor):
             else:
                 b.append(v)
         return a, b
+
 
 partition = Partition
 """
@@ -247,6 +279,7 @@ def find(f):
         pass
     return Find(lambda value: next(v for v in value if f(v)))
 
+
 Find = find_with = find
 """
 An alias to find
@@ -275,6 +308,7 @@ class Map(WrappedExtractor):
         else:
             return list(output)
 
+
 map_with = map_ = Map
 
 
@@ -292,6 +326,7 @@ class Flatten(Extractor):
         else:
             return [v for v in chain.from_iterable(value)]
 
+
 flatten = Flatten()
 lazy_flatten = Flatten(lazy=True)
 
@@ -308,6 +343,7 @@ class Fold(WrappedExtractor):
         return _reduce(_partial(super(Fold, self).__call__, **flags),
                        value, self.initializer)
 
+
 fold = fold_with = Fold
 
 
@@ -318,17 +354,20 @@ class Reduce(Fold):
     def __init__(self, callable_object, accepts_flags=False):
         super(Reduce, self).__init__(callable_object, accepts_flags, initializer=None)
 
+
 reduce = reduce_with = Reduce
 
 
 class FoldLeft(Fold):
     pass
 
+
 fold_left = fold_left_with = FoldLeft
 
 
 class ReduceLeft(Reduce):
     pass
+
 
 reduce_left = reduce_left_with = ReduceLeft
 
@@ -340,6 +379,7 @@ class FoldRight(Fold):
     def __call__(self, value, **flags):
         return super(FoldRight, self).__call__(reversed(value), **flags)
 
+
 fold_right = fold_right_with = FoldRight
 
 
@@ -348,6 +388,7 @@ class ReduceRight(Reduce, FoldRight):
     Implements the Reduce Right operation
     """
     pass
+
 
 reduce_right = reduce_right_with = ReduceRight
 
@@ -364,10 +405,11 @@ class GroupBy(WrappedExtractor):
             items.append(v)
         return output
 
+
 group_by = GroupBy
 
 
-class Grouped(Extractor, InherentlyLazy):
+class Grouped(Extractor, LazyTransformer):
     """
     Implements the Grouped operation
     """
@@ -397,5 +439,6 @@ class Grouped(Extractor, InherentlyLazy):
         #             return output
         #         start += self.size
         #         end += self.size
+
 
 grouped = Grouped
