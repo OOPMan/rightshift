@@ -96,7 +96,7 @@ class FloorModuloOperation(BinaryOperation):
     """
     Implements the floor division // operator
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         return value // self.value
 
 floor_mod = floor_modulo = floor_divide = FloorModuloOperation
@@ -106,7 +106,7 @@ class ModuloOperation(BinaryOperation):
     """
     Implements the modulo % operator
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         return value % self.value
 
 mod = modulo = ModuloOperation
@@ -116,7 +116,7 @@ class DivModOperation(BinaryOperation):
     """
     Implements the divmod operation
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         return divmod(value, self.value)
 
 div_mod = DivModOperation
@@ -126,7 +126,7 @@ class AddOperation(ArithmeticOperation):
     """
     Implements the add + operator
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         for v in self.values:
             value += v
         return value
@@ -138,7 +138,7 @@ class SubtractOperation(ArithmeticOperation):
     """
     Implements the subtract - operator
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         for v in self.values:
             value -= v
         return value
@@ -150,7 +150,7 @@ class MultiplyOperation(ArithmeticOperation):
     """
     Implements the multiply * operator
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         for v in self.values:
             value *= v
         return value
@@ -162,7 +162,7 @@ class DivideOperation(ArithmeticOperation):
     """
     Implements the / divide operator
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         for v in self.values:
             value /= v
         return value
@@ -180,7 +180,7 @@ class PowOperation(ArithmeticOperation):
                                      'to rightshift.operations.PowOperation')
         super(PowOperation, self).__init__(*values)
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         return pow(value, *self.values)
 
 power = raise_to = PowOperation
@@ -190,7 +190,7 @@ class LeftShiftOperation(ArithmeticOperation):
     """
     Implements the left shift << operator
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         for v in self.values:
             value <<= v
         return value
@@ -202,7 +202,7 @@ class RightShiftOperation(ArithmeticOperation):
     """
     Implements the right shift >> operator
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         for v in self.values:
             value >>= v
         return value
@@ -214,7 +214,7 @@ class AndOperation(ArithmeticOperation):
     """
     Implements the bitwise and & operator
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         for v in self.values:
             value &= v
         return value
@@ -226,7 +226,7 @@ class OrOperation(ArithmeticOperation):
     """
     Implements the bitwise | operator
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         for v in self.values:
             value |= v
         return value
@@ -238,7 +238,7 @@ class XorOperation(ArithmeticOperation):
     """
     Implements the bitwise xor ^ operator
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         for v in self.values:
             value ^= v
         return value

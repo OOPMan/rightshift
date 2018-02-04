@@ -83,7 +83,7 @@ class Must(Matcher):
         """
         self.matchers = matchers
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         TODO: Document
         """
@@ -129,7 +129,7 @@ class Should(Matcher):
         """
         self.matchers = matchers
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         TODO: Document
         """
@@ -175,7 +175,7 @@ class MustNot(Matcher):
         """
         self.matchers = matchers
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         TODO: Document
         """
@@ -214,7 +214,7 @@ class IsInstance(Matcher):
         """
         self.types = types
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         Perform on instance check on value.
         """
@@ -255,7 +255,7 @@ class Comparison(Matcher):
         self.comparator = comparator
         self.falsey_exceptions = falsey_exceptions
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         try:
             return bool(self.comparator(value, **flags))
         except Exception as e:

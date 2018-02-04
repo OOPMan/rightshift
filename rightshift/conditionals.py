@@ -84,7 +84,7 @@ class WhenBooleanCondition(BooleanCondition):
     result the .then() transformer is called, otherwise the .otherwise()
     transformer is called.
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         """
         if self.matcher(value, **flags):
@@ -104,7 +104,7 @@ class WhenNotBooleanCondition(BooleanCondition):
     False result the .then() transformer is called, otherwise the .otherwise()
     transform is called.
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         if not self.matcher(value, **flags):
             return self.then_transformer(value, **flags)
         else:

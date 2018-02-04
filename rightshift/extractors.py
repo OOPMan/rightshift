@@ -127,7 +127,7 @@ class Attribute(HasFlags(Extractor, AttributeMixin, metaclass=IndexOrAccessToIns
         super(Attribute, self).__init__()
         self.attribute = attribute
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         :param value: The value to attempt extraction from
         :param flags: A dictionary of flags
@@ -182,7 +182,7 @@ class Object(HasFlags(Extractor, ObjectMixin, metaclass=IndexOrAccessToInstantia
         self.item_or_slice = item_or_attribute
         self.determiner = determiner
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         if self.determiner == IndexOrAccessToInstantiate.ATTR:
             return Attribute.__call__(self, value, **flags)
         elif self.determiner == IndexOrAccessToInstantiate.ITEM:
@@ -217,7 +217,7 @@ class PatternGroup(Extractor):
         self.group = group
         self.search = search
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         try:
             method = self.pattern.search if flags.get('pattern_group__search', self.search) else self.pattern.match
             match = method(value)
@@ -245,7 +245,7 @@ class CoerceTo(Extractor):
         self.type = type
         self.coercer = coercer
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         try:
             value = self.coercer(value)
             if not isinstance(value, self.type):

@@ -16,24 +16,45 @@ class WrappedExtractor(Wrap, Extractor):
     """
     ExtractorException layer over the WrappedExtractor transformer
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         try:
             return super(WrappedExtractor, self).__call__(value, **flags)
         except TransformationException as e:
             raise_from(ExtractorException, e)
 
 
-class Head(Item):
-    pass
+class Iterator(Extractor):
+
+    def __call__(self, value, flags):
+        return tuple(item for item in value)
 
 
-head = Head = Head[0]
+class LazyIterator(LazyTransformer, Iterator):
+
+    def __lazy_call__(self, value, flags):
+        return (item for item in value)
+
+    def __eager_call__(self, value, flags):
+        return tuple(item for item in value)
+
+
+class Head(LazyIterator):
+
+    def __lazy_call__(self, value, flags):
+        for item in super(type(self), self).__lazy_call__(value, flags):
+            return item
+
+    def __eager_call__(self, value, flags):
+        return self.__lazy_call__(value, flags)
+
+
+head = Head = Head()
 """
 head is a reference to an instance of rightshift.collections.Head
 """
 
 
-class Tail(LazyTransformer, Extractor):
+class Tail(LazyIterator):
     def __lazy_call__(self, value, flags):
         """
         This method implements the lazy form of the transformation
@@ -43,9 +64,9 @@ class Tail(LazyTransformer, Extractor):
         :return:
         """
         skip = True
-        for v in value:
+        for item in super(type(self), self).__lazy_call__(value, flags):
             if not skip:
-                yield v
+                yield item
             skip = False if skip else skip
 
     def __eager_call__(self, value, flags):
@@ -58,7 +79,7 @@ class Tail(LazyTransformer, Extractor):
         :param flags:
         :return:
         """
-        return tuple(v for v in self.__lazy_call__(value, flags))
+        return tuple(item for item in self.__lazy_call__(value, flags))
 
 
 tail = Tail = Tail()
@@ -126,7 +147,7 @@ class TakeWhile(WrappedExtractor):
         super(TakeWhile, self).__init__(callable_object, accepts_flags)
         self.lazy = lazy
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         if flags.get('take_while__lazy', self.lazy):
             for v in value:
                 if super(TakeWhile, self).__call__(value, **flags):
@@ -196,7 +217,7 @@ class DropWhile(WrappedExtractor):
         super().__init__(callable_object, accepts_flags)
         self.lazy = lazy
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         if flags.get('drop_while__lazy', self.lazy):
             done = False
             for v in value:
@@ -228,7 +249,7 @@ class Partition(WrappedExtractor):
     In other news, these doc comments are horrific. I really need to improve
     them.
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         a = []
         b = []
         for v in value:
@@ -253,7 +274,7 @@ class Filter(WrappedExtractor):
         super(Filter, self).__init__(callable_object, accepts_flags)
         self.lazy = lazy
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         f = _partial(super(Filter, self).__call__, **flags)
         output = filter(f, value)
         if flags.get('filter__lazy', self.lazy):
@@ -297,7 +318,7 @@ class Map(WrappedExtractor):
         self.unpack_value = unpack_value
         self.lazy = lazy
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         f = _partial(super(Map, self).__call__, **flags)
         if flags.get('map__unpack_value', self.unpack_value):
             output = map(f, *value)
@@ -320,7 +341,7 @@ class Flatten(Extractor):
     def __init__(self, lazy=False):
         self.lazy = lazy
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         if flags.get('flatten__lazy', self.lazy):
             return (v for v in chain.from_iterable(value))
         else:
@@ -339,7 +360,7 @@ class Fold(WrappedExtractor):
         super(Fold, self).__init__(callable_object, accepts_flags)
         self.initializer = initializer
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         return _reduce(_partial(super(Fold, self).__call__, **flags),
                        value, self.initializer)
 
@@ -376,7 +397,7 @@ class FoldRight(Fold):
     """
     Implements the Fold Right operation
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         return super(FoldRight, self).__call__(reversed(value), **flags)
 
 
@@ -397,7 +418,7 @@ class GroupBy(WrappedExtractor):
     """
     Implements the Group By operation
     """
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         output = {}
         for v in value:
             key = super(GroupBy, self).__call__(v, **flags)
@@ -418,7 +439,7 @@ class Grouped(Extractor, LazyTransformer):
         self.size = size
         self.lazy = lazy
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         print('In')
         start = 0
         end = self.size

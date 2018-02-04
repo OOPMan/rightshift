@@ -91,7 +91,7 @@ class DefaultChain(Chain):
         super(DefaultChain, self).__init__(left, None)
         self.default = default
 
-    def __call__(self, value, **flags):
+    def __call__(self, value, flags):
         """
         TODO: Document
         """
